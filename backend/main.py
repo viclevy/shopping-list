@@ -1,0 +1,122 @@
+import os
+
+import uvicorn
+from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from auth import hash_password
+from config import settings
+from database import Base, SessionLocal, engine
+from models import Store, User
+from routers import (
+    analytics_router,
+    auth_router,
+    history_router,
+    products_router,
+    search_router,
+    shopping_list_router,
+    stores_router,
+    users_router,
+    ws_router,
+)
+from websocket_manager import manager
+
+app = FastAPI(title="Family Shopping List")
+
+
+@app.middleware("http")
+async def no_cache_api(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Wire WebSocket manager into shopping list router
+shopping_list_router.ws_manager = manager
+
+# --- Routers ---
+app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
+app.include_router(users_router.router, prefix="/api/users", tags=["users"])
+app.include_router(stores_router.router, prefix="/api/stores", tags=["stores"])
+app.include_router(products_router.router, prefix="/api/products", tags=["products"])
+app.include_router(shopping_list_router.router, prefix="/api/list", tags=["shopping-list"])
+app.include_router(history_router.router, prefix="/api/history", tags=["history"])
+app.include_router(analytics_router.router, prefix="/api/analytics", tags=["analytics"])
+app.include_router(search_router.router, prefix="/api/search", tags=["search"])
+app.include_router(ws_router.router, tags=["websocket"])
+
+# --- Static file mounts ---
+uploads_dir = os.path.join(settings.data_dir, "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
+# Serve Vue SPA (must be last — catches all unmatched routes)
+spa_dir = os.path.join(os.path.dirname(__file__), "frontend", "dist")
+if os.path.isdir(spa_dir):
+    # Mount static assets (JS, CSS, icons) without html=True
+    app.mount("/assets", StaticFiles(directory=os.path.join(spa_dir, "assets")), name="assets")
+    app.mount("/icons", StaticFiles(directory=os.path.join(spa_dir, "icons")), name="icons")
+
+    # Serve top-level static files and SPA fallback
+    @app.get("/{full_path:path}")
+    async def serve_spa(request: Request, full_path: str):
+        if full_path.startswith("api/"):
+            return Response(status_code=404, content='{"detail":"Not found"}',
+                            media_type="application/json")
+        file_path = os.path.join(spa_dir, full_path)
+        if full_path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(spa_dir, "index.html"))
+
+INITIAL_STORES = [
+    "Stop & Shop",
+    "Shop-Rite",
+    "BJ's Wholesale Club",
+    "Costco",
+    "Whole Foods",
+    "Trader Joe's",
+]
+
+
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        # Bootstrap admin user
+        admin = db.query(User).filter(User.username == "admin").first()
+        if not admin:
+            admin = User(
+                username="admin",
+                password_hash=hash_password(settings.admin_password),
+                is_admin=True,
+            )
+            db.add(admin)
+            db.commit()
+
+        # Seed initial stores
+        for store_name in INITIAL_STORES:
+            if not db.query(Store).filter(Store.name == store_name).first():
+                db.add(Store(name=store_name))
+        db.commit()
+    finally:
+        db.close()
+
+
+if __name__ == "__main__":
+    kwargs = {"host": "0.0.0.0", "port": settings.port}
+    if settings.tls_enabled and settings.tls_cert_file and settings.tls_key_file:
+        kwargs["ssl_certfile"] = settings.tls_cert_file
+        kwargs["ssl_keyfile"] = settings.tls_key_file
+    uvicorn.run(app, **kwargs)
