@@ -250,9 +250,7 @@ def save_store_prices(
     for sp in prices:
         store = db.query(Store).filter(Store.name.ilike(sp.store_name)).first()
         if not store:
-            store = Store(name=sp.store_name)
-            db.add(store)
-            db.flush()
+            continue
         existing = db.query(ProductStore).filter(
             ProductStore.product_id == product_id,
             ProductStore.store_id == store.id,

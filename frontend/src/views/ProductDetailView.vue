@@ -2,6 +2,7 @@
   <div v-if="product" class="product-detail">
     <div class="card">
       <div class="detail-header">
+        <button class="back-btn" @click="$router.back()" title="Back">&larr;</button>
         <h2>{{ product.name }}</h2>
         <span v-if="product.category" class="category-badge">{{ product.category }}</span>
       </div>
@@ -18,7 +19,9 @@
             <input v-model="editCategory" type="text" placeholder="e.g. Dairy, Produce..." :class="{ suggesting: suggestingCategory }" />
             <span v-if="suggestingCategory" class="suggest-hint">Suggesting...</span>
           </div>
-          <button class="btn-primary" @click="saveDetails" :disabled="saving">Save</button>
+          <button class="btn-primary" @click="saveDetails" :disabled="saving">
+            {{ saving === 'done' ? 'Saved!' : 'Save' }}
+          </button>
         </div>
       </div>
 
@@ -86,12 +89,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '../api.js'
 import PhotoPicker from '../components/PhotoPicker.vue'
 import ImageSearchPicker from '../components/ImageSearchPicker.vue'
 
 const route = useRoute()
+const router = useRouter()
 const product = ref(null)
 const showImageSearch = ref(false)
 const history = ref([])
@@ -140,8 +144,9 @@ async function saveDetails() {
       name: editName.value,
       category: editCategory.value || null,
     })
-    await reload()
-  } finally {
+    saving.value = 'done'
+    setTimeout(() => router.back(), 400)
+  } catch {
     saving.value = false
   }
 }
@@ -176,6 +181,26 @@ function formatDate(iso) {
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+}
+
+.back-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.back-btn:hover {
+  background: var(--text-secondary);
+  color: white;
 }
 
 .category-badge {

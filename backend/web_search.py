@@ -1,6 +1,6 @@
 """
-Web search module using Gemini API with Google Search grounding
-and store scrapers (Walmart, Target) for prices and images.
+Web search module using Gemini API for category suggestions
+and SerpAPI Google Shopping for multi-store prices and images.
 
 Runs both sources in parallel and merges results.
 """
@@ -10,11 +10,11 @@ import json
 import re
 from typing import Optional
 
+import serpapi
 from google import genai
 from google.genai import types
 
 from config import settings
-from store_scraper import search_stores
 
 _CATEGORIES = [
     "Produce", "Dairy", "Meat", "Seafood", "Bakery", "Frozen",
@@ -82,54 +82,94 @@ Example: {{"category": "Dairy", "price": 4.29, "stores": ["Walmart", "Kroger", "
         return {"category": None, "price": None, "stores": []}
 
 
+def _search_serpapi(product_name: str, start: int = 0) -> dict:
+    """Call SerpAPI Google Shopping. Returns {store_prices, images, image_url}."""
+    if not settings.serpapi_key:
+        return {"store_prices": [], "images": [], "image_url": None}
+
+    try:
+        client = serpapi.Client(api_key=settings.serpapi_key)
+        params = {
+            "engine": "google_shopping",
+            "q": product_name,
+            "hl": "en",
+            "gl": "us",
+            "num": 10,
+        }
+        if start > 0:
+            params["start"] = start
+        results = client.search(params)
+    except Exception:
+        return {"store_prices": [], "images": [], "image_url": None}
+
+    shopping = results.get("shopping_results", [])
+
+    # Build store_prices — one per unique store, best match first
+    seen_stores = set()
+    store_prices = []
+    for item in shopping:
+        store = item.get("source", "")
+        if not store or store in seen_stores:
+            continue
+        seen_stores.add(store)
+        price = item.get("extracted_price")
+        if price is None:
+            continue
+        store_prices.append({
+            "store": store,
+            "name": item.get("title", ""),
+            "price": price,
+            "price_display": item.get("price", ""),
+            "image": item.get("thumbnail", ""),
+            "id": item.get("product_id", ""),
+            "url": item.get("product_link", ""),
+        })
+        if len(store_prices) >= 5:
+            break
+
+    # Build images list for ImageSearchPicker
+    images = []
+    for item in shopping[:6]:
+        thumb = item.get("thumbnail", "")
+        if thumb:
+            images.append({
+                "url": thumb,
+                "name": item.get("title", ""),
+                "store": item.get("source", ""),
+            })
+
+    image_url = images[0]["url"] if images else None
+    return {"store_prices": store_prices, "images": images, "image_url": image_url}
+
+
+def search_images(product_name: str, start: int = 0) -> list[dict]:
+    """Search SerpAPI Google Shopping for product images."""
+    result = _search_serpapi(product_name, start=start)
+    return result["images"]
+
+
 async def suggest_product_info(product_name: str) -> dict:
-    """Suggest category, price, stores, and images using Gemini + store scrapers.
+    """Suggest category, price, stores, and images using Gemini + SerpAPI.
 
     Runs both sources in parallel. Returns merged dict with keys:
         category, price, stores (from Gemini),
-        store_prices (from scrapers),
-        image_url (best image from scrapers).
+        store_prices, image_url, images (from SerpAPI).
     """
     gemini_task = asyncio.to_thread(_query_gemini, product_name)
-    scraper_task = asyncio.to_thread(search_stores, product_name)
+    serpapi_task = asyncio.to_thread(_search_serpapi, product_name)
 
-    gemini_result, scraper_result = await asyncio.gather(
-        gemini_task, scraper_task, return_exceptions=True,
+    gemini_result, serpapi_result = await asyncio.gather(
+        gemini_task, serpapi_task, return_exceptions=True,
     )
 
-    # Handle failures gracefully
     if isinstance(gemini_result, Exception):
         gemini_result = {"category": None, "price": None, "stores": []}
-    if isinstance(scraper_result, Exception):
-        scraper_result = {"walmart": [], "target": []}
-
-    # Build store_prices — first result from each store that has a price
-    store_prices = []
-    for store_key in ("walmart", "target"):
-        items = scraper_result.get(store_key, [])
-        for item in items[:1]:  # take best match from each store
-            if item.get("price") is not None:
-                store_prices.append(item)
-
-    # Collect multiple images for selection (up to 3 per store)
-    images = []
-    for store_key in ("walmart", "target"):
-        items = scraper_result.get(store_key, [])
-        for item in items[:3]:
-            img = item.get("image", "")
-            if img:
-                images.append({
-                    "url": img,
-                    "name": item.get("name", ""),
-                    "store": item.get("store", store_key.title()),
-                })
-
-    # Pick best image: prefer Walmart (higher quality), fall back to Target
-    image_url = images[0]["url"] if images else None
+    if isinstance(serpapi_result, Exception):
+        serpapi_result = {"store_prices": [], "images": [], "image_url": None}
 
     return {
         **gemini_result,
-        "store_prices": store_prices,
-        "image_url": image_url,
-        "images": images,
+        "store_prices": serpapi_result["store_prices"],
+        "image_url": serpapi_result["image_url"],
+        "images": serpapi_result["images"],
     }

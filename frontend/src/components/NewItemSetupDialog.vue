@@ -3,7 +3,10 @@
     <div class="dialog card">
       <h3>Set up: {{ product?.name }}</h3>
 
-      <div v-if="loading" class="status-text">Looking up product info...</div>
+      <div v-if="loading" class="loading-section">
+        <div class="spinner"></div>
+        <div class="loading-text">Looking up product info...</div>
+      </div>
 
       <div v-if="images.length || !loading" class="field">
         <label>Product Image</label>
@@ -287,11 +290,31 @@ async function save() {
   color: var(--text);
 }
 
-.status-text {
+.loading-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 12px;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
   text-align: center;
   color: var(--text-secondary);
   font-size: 13px;
-  padding: 12px;
 }
 
 .dialog-actions {

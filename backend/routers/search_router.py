@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, Query
 
 from auth import get_current_user
 from models import User
-from store_scraper import search_images
-from web_search import suggest_product_info
+from web_search import search_images, suggest_product_info
 
 router = APIRouter()
 
@@ -21,7 +20,8 @@ async def proxy_suggest(
 @router.get("/images")
 async def image_search(
     q: str = Query(...),
+    start: int = Query(0, ge=0),
     _user: User = Depends(get_current_user),
 ):
-    """Search store scrapers for product images."""
-    return await asyncio.to_thread(search_images, q)
+    """Search SerpAPI Google Shopping for product images."""
+    return await asyncio.to_thread(search_images, q, start)
