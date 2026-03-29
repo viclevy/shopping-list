@@ -96,7 +96,7 @@ class HistoryEvent(Base):
     action = Column(String, nullable=False)  # added, modified, checked_off, removed
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    store_id = Column(Integer, ForeignKey("stores.id"), nullable=True)
+    store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=True)
     price = Column(Float, nullable=True)
     quantity = Column(Float, nullable=True)
     unit = Column(String, nullable=True)

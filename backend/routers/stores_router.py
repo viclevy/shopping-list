@@ -5,10 +5,29 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models import Store, User
+from models import HistoryEvent, ProductStore, Store, User
 from schemas import StoreCreate, StoreRead
 
+
 router = APIRouter()
+
+
+@router.get("/{store_id}/delete-preview")
+def delete_preview(
+    store_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    history_count = db.query(HistoryEvent).filter(HistoryEvent.store_id == store_id).count()
+    product_link_count = db.query(ProductStore).filter(ProductStore.store_id == store_id).count()
+    return {
+        "store": {"id": store.id, "name": store.name},
+        "history_events": history_count,
+        "product_links": product_link_count,
+    }
 
 
 @router.get("", response_model=List[StoreRead])
@@ -40,5 +59,6 @@ def delete_store(
     store = db.query(Store).filter(Store.id == store_id).first()
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
+    db.query(HistoryEvent).filter(HistoryEvent.store_id == store_id).delete()
     db.delete(store)
     db.commit()

@@ -7,13 +7,16 @@
       <p class="empty-hint">Add items using the input above or the voice button.</p>
     </div>
     <div v-else class="list">
-      <ListItem
-        v-for="item in list.items"
-        :key="item.id"
-        :item="item"
-        @check-off="openCheckOff(item)"
-        @remove="handleRemove(item)"
-      />
+      <div v-for="group in groupedItems" :key="group.category" class="category-group">
+        <div class="category-header">{{ group.category }}</div>
+        <ListItem
+          v-for="item in group.items"
+          :key="item.id"
+          :item="item"
+          @check-off="openCheckOff(item)"
+          @remove="handleRemove(item)"
+        />
+      </div>
     </div>
     <BoughtBeforeSection />
     <CheckOffDialog
@@ -32,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import AddItemBar from '../components/AddItemBar.vue'
 import ListItem from '../components/ListItem.vue'
@@ -41,6 +44,22 @@ import CheckOffDialog from '../components/CheckOffDialog.vue'
 import NewItemSetupDialog from '../components/NewItemSetupDialog.vue'
 
 const list = useShoppingListStore()
+
+const groupedItems = computed(() => {
+  const groups = {}
+  for (const item of list.items) {
+    const cat = item.product.category || 'Uncategorized'
+    if (!groups[cat]) groups[cat] = []
+    groups[cat].push(item)
+  }
+  return Object.keys(groups)
+    .sort((a, b) => {
+      if (a === 'Uncategorized') return 1
+      if (b === 'Uncategorized') return -1
+      return a.localeCompare(b)
+    })
+    .map(cat => ({ category: cat, items: groups[cat] }))
+})
 
 const checkOffVisible = ref(false)
 const checkOffItem = ref(null)
@@ -99,5 +118,18 @@ function handleSetupSaved() {
 
 .list {
   margin-top: 16px;
+}
+
+.category-group {
+  margin-bottom: 8px;
+}
+
+.category-header {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 10px 12px 4px;
 }
 </style>

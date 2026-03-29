@@ -59,9 +59,25 @@ async function addStore() {
 }
 
 async function deleteStore(store) {
-  if (!confirm(`Delete store "${store.name}"?`)) return
-  await api.delete(`/stores/${store.id}`)
-  await loadStores()
+  try {
+    const { data: preview } = await api.get(`/stores/${store.id}/delete-preview`)
+    const warnings = []
+    if (preview.history_events > 0) {
+      warnings.push(`${preview.history_events} history event${preview.history_events === 1 ? '' : 's'}`)
+    }
+    if (preview.product_links > 0) {
+      warnings.push(`${preview.product_links} product-store link${preview.product_links === 1 ? '' : 's'}`)
+    }
+    let msg = `Delete store "${store.name}"?`
+    if (warnings.length > 0) {
+      msg += `\n\nThis will permanently delete:\n- ${warnings.join('\n- ')}`
+    }
+    if (!confirm(msg)) return
+    await api.delete(`/stores/${store.id}`)
+    await loadStores()
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Failed to delete store'
+  }
 }
 
 onMounted(loadStores)
