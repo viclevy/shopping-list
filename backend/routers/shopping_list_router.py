@@ -7,12 +7,13 @@ from sqlalchemy.orm import Session, joinedload
 
 from auth import get_current_user
 from database import get_db
-from google_search import suggest_category_and_price
+from web_search import suggest_product_info
 from models import (
     HistoryEvent,
     Product,
     ProductStore,
     ShoppingListItem,
+    Store,
     User,
 )
 from schemas import (
@@ -38,6 +39,7 @@ def _item_to_read(item: ShoppingListItem) -> ShoppingListItemRead:
             id=product.id,
             name=product.name,
             category=product.category,
+            image_url=product.image_url,
             photos=product.photos,
             stores=[
                 ProductStoreRead(
@@ -118,21 +120,48 @@ async def add_item(
             db.add(product)
             db.flush()
             try:
-                suggestion = await suggest_category_and_price(body.product_name)
+                suggestion = await suggest_product_info(body.product_name)
                 if suggestion.get("category"):
                     product.category = suggestion["category"]
+                if suggestion.get("image_url"):
+                    product.image_url = suggestion["image_url"]
+                # Create ProductStore records from scraper prices
+                for sp in suggestion.get("store_prices", []):
+                    if sp.get("price") is None:
+                        continue
+                    store = db.query(Store).filter(
+                        Store.name.ilike(sp["store"])
+                    ).first()
+                    if not store:
+                        store = Store(name=sp["store"])
+                        db.add(store)
+                        db.flush()
+                    db.add(ProductStore(
+                        product_id=product.id,
+                        store_id=store.id,
+                        price=sp["price"],
+                    ))
             except Exception:
                 pass
     else:
         raise HTTPException(status_code=400, detail="product_id or product_name required")
 
-    item = ShoppingListItem(
-        product_id=product.id,
-        quantity=body.quantity,
-        unit=body.unit,
-        added_by=user.id,
-    )
-    db.add(item)
+    # Check if this product is already on the list
+    existing_item = db.query(ShoppingListItem).filter(
+        ShoppingListItem.product_id == product.id
+    ).first()
+
+    if existing_item:
+        existing_item.quantity += (body.quantity or 1)
+        item = existing_item
+    else:
+        item = ShoppingListItem(
+            product_id=product.id,
+            quantity=body.quantity,
+            unit=body.unit,
+            added_by=user.id,
+        )
+        db.add(item)
 
     # Record history
     db.add(HistoryEvent(

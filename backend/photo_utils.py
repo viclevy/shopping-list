@@ -2,6 +2,7 @@ import io
 import os
 import uuid
 
+import requests
 from PIL import Image
 
 from config import settings
@@ -44,3 +45,12 @@ def delete_photo(filename: str):
     filepath = os.path.join(UPLOAD_DIR, filename)
     if os.path.exists(filepath):
         os.remove(filepath)
+
+
+def save_photo_from_url(image_url: str) -> str:
+    """Download an image from a URL and save it locally. Returns filename."""
+    resp = requests.get(image_url, timeout=10, headers={
+        "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+    })
+    resp.raise_for_status()
+    return save_photo(resp.content, "web-image.jpg")

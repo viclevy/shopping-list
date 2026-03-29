@@ -1,12 +1,13 @@
+from datetime import datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session, joinedload
 
 from auth import get_current_user
 from database import get_db
-from models import Product, ProductPhoto, ProductStore, Store, User
-from photo_utils import delete_photo, save_photo
+from models import HistoryEvent, Product, ProductPhoto, ProductStore, Store, User
+from photo_utils import delete_photo, save_photo, save_photo_from_url
 from schemas import ProductCreate, ProductRead, ProductStoreRead, ProductUpdate
 
 router = APIRouter()
@@ -17,6 +18,7 @@ def _product_to_read(product: Product) -> ProductRead:
         id=product.id,
         name=product.name,
         category=product.category,
+        image_url=product.image_url,
         photos=product.photos,
         stores=[
             ProductStoreRead(
@@ -127,7 +129,7 @@ async def upload_photo(
     product_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
@@ -142,8 +144,14 @@ async def upload_photo(
         original_name=file.filename,
     )
     db.add(photo)
+    db.add(HistoryEvent(
+        product_id=product_id,
+        action="photo_added",
+        user_id=user.id,
+        details=f"Photo uploaded: {file.filename or 'photo.jpg'}",
+    ))
     db.commit()
-    return get_product(product_id, db, _user)
+    return get_product(product_id, db, user)
 
 
 @router.delete("/{product_id}/photos/{photo_id}", status_code=204)
@@ -163,3 +171,66 @@ def remove_photo(
     delete_photo(photo.filename)
     db.delete(photo)
     db.commit()
+
+
+@router.post("/{product_id}/photos/from-url", response_model=ProductRead)
+def add_photo_from_url(
+    product_id: int,
+    url: str = Body(..., embed=True),
+    set_primary: bool = Body(False, embed=True),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    try:
+        filename = save_photo_from_url(url)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Failed to download image")
+
+    if set_primary:
+        db.query(ProductPhoto).filter(
+            ProductPhoto.product_id == product_id
+        ).update({"is_primary": False})
+
+    photo = ProductPhoto(
+        product_id=product_id,
+        filename=filename,
+        original_name=url.split("/")[-1][:100],
+        is_primary=set_primary,
+    )
+    db.add(photo)
+    db.add(HistoryEvent(
+        product_id=product_id,
+        action="photo_added",
+        user_id=user.id,
+        details=f"Photo from URL: {url[:200]}",
+    ))
+    db.commit()
+    return get_product(product_id, db, user)
+
+
+@router.put("/{product_id}/photos/{photo_id}/primary", response_model=ProductRead)
+def set_primary_photo(
+    product_id: int,
+    photo_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    photo = (
+        db.query(ProductPhoto)
+        .filter(ProductPhoto.id == photo_id, ProductPhoto.product_id == product_id)
+        .first()
+    )
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    # Unset all others, set this one
+    db.query(ProductPhoto).filter(
+        ProductPhoto.product_id == product_id
+    ).update({"is_primary": False})
+    photo.is_primary = True
+    db.commit()
+    return get_product(product_id, db, _user)

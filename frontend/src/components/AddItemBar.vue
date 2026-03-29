@@ -19,8 +19,8 @@
             @click="selectProduct(product)"
           >
             <img
-              v-if="product.photos?.length"
-              :src="`/uploads/${product.photos[0].filename}`"
+              v-if="thumbUrl(product)"
+              :src="thumbUrl(product)"
               class="dropdown-thumb"
             />
             <div class="dropdown-info">
@@ -32,7 +32,7 @@
       </div>
       <input v-model.number="quantity" type="number" min="0.1" step="any" placeholder="Qty" class="qty-input" />
       <input v-model="unit" type="text" placeholder="Unit" class="unit-input" />
-      <button class="btn-primary" @click="handleAdd" :disabled="!query.trim()">Add</button>
+      <button class="btn-primary" @click="handleAdd" :disabled="!query.trim() || adding">{{ adding ? 'Adding...' : 'Add' }}</button>
     </div>
   </div>
 </template>
@@ -45,14 +45,25 @@ import { useProductsStore } from '../stores/products.js'
 const list = useShoppingListStore()
 const products = useProductsStore()
 
+const emit = defineEmits(['new-product'])
+
 const query = ref('')
 const quantity = ref(1)
 const unit = ref('')
 const selectedProduct = ref(null)
 const dropdownOpen = ref(false)
+const adding = ref(false)
 const inputEl = ref(null)
 
 const results = ref([])
+
+function thumbUrl(product) {
+  const photos = product.photos || []
+  const primary = photos.find(p => p.is_primary) || photos[0]
+  if (primary) return `/uploads/${primary.filename}`
+  if (product.image_url) return product.image_url
+  return null
+}
 
 let searchTimeout = null
 
@@ -79,25 +90,35 @@ function selectProduct(product) {
 
 async function handleAdd() {
   const name = query.value.trim()
-  if (!name) return
+  if (!name || adding.value) return
 
+  adding.value = true
   const data = {
     quantity: quantity.value || 1,
     unit: unit.value || null,
   }
+  const isNewProduct = !selectedProduct.value
   if (selectedProduct.value) {
     data.product_id = selectedProduct.value.id
   } else {
     data.product_name = name
   }
 
-  await list.addItem(data)
-  query.value = ''
-  quantity.value = 1
-  unit.value = ''
-  selectedProduct.value = null
-  results.value = []
-  inputEl.value?.focus()
+  try {
+    const result = await list.addItem(data)
+    query.value = ''
+    quantity.value = 1
+    unit.value = ''
+    selectedProduct.value = null
+    results.value = []
+    inputEl.value?.focus()
+
+    if (isNewProduct && result?.product) {
+      emit('new-product', result.product)
+    }
+  } finally {
+    adding.value = false
+  }
 }
 </script>
 

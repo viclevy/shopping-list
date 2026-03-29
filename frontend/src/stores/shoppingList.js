@@ -19,8 +19,9 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   }
 
   async function addItem(data) {
-    await api.post('/list', data)
+    const res = await api.post('/list', data)
     // WebSocket will update the list
+    return res.data
   }
 
   async function editItem(id, data) {

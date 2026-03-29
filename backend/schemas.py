@@ -52,6 +52,7 @@ class ProductPhotoRead(BaseModel):
     id: int
     filename: str
     original_name: Optional[str] = None
+    is_primary: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -83,6 +84,7 @@ class ProductRead(BaseModel):
     id: int
     name: str
     category: Optional[str] = None
+    image_url: Optional[str] = None
     photos: List[ProductPhotoRead] = []
     stores: List[ProductStoreRead] = []
     created_at: datetime

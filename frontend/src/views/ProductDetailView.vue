@@ -27,6 +27,12 @@
         <div v-if="product.photos?.length" class="photo-gallery">
           <div v-for="photo in product.photos" :key="photo.id" class="photo-wrap">
             <img :src="`/uploads/${photo.filename}`" class="photo-img" />
+            <button
+              class="photo-primary"
+              :class="{ active: photo.is_primary }"
+              title="Set as primary"
+              @click="setPrimary(photo.id)"
+            >&#9733;</button>
             <button class="photo-delete" @click="deletePhoto(photo.id)">&times;</button>
           </div>
         </div>
@@ -35,6 +41,15 @@
           :product-id="product.id"
           :product-name="product.name"
           @photo-added="reload"
+        />
+        <button class="btn-secondary find-images-btn" @click="showImageSearch = !showImageSearch">
+          {{ showImageSearch ? 'Hide Image Search' : 'Find Images Online' }}
+        </button>
+        <ImageSearchPicker
+          v-if="showImageSearch"
+          :product-id="product.id"
+          :query="product.name"
+          @saved="onImageSaved"
         />
       </div>
 
@@ -74,9 +89,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../api.js'
 import PhotoPicker from '../components/PhotoPicker.vue'
+import ImageSearchPicker from '../components/ImageSearchPicker.vue'
 
 const route = useRoute()
 const product = ref(null)
+const showImageSearch = ref(false)
 const history = ref([])
 const editName = ref('')
 const editCategory = ref('')
@@ -132,6 +149,16 @@ async function saveDetails() {
 async function deletePhoto(photoId) {
   if (!confirm('Delete this photo?')) return
   await api.delete(`/products/${product.value.id}/photos/${photoId}`)
+  await reload()
+}
+
+async function setPrimary(photoId) {
+  await api.put(`/products/${product.value.id}/photos/${photoId}/primary`)
+  await reload()
+}
+
+async function onImageSaved() {
+  showImageSearch.value = false
   await reload()
 }
 
@@ -220,6 +247,35 @@ function formatDate(iso) {
   align-items: center;
   justify-content: center;
   padding: 0;
+}
+
+.photo-primary {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  color: rgba(255,255,255,0.5);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  border: none;
+  line-height: 1;
+}
+
+.photo-primary.active {
+  color: #FFD700;
+  background: rgba(0,0,0,0.7);
+}
+
+.find-images-btn {
+  margin-top: 8px;
+  font-size: 13px;
 }
 
 .store-table {

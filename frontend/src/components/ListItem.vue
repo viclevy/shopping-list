@@ -2,8 +2,8 @@
   <div class="list-item card">
     <div class="item-left" @click="$router.push(`/product/${item.product.id}`)">
       <img
-        v-if="item.product.photos?.length"
-        :src="`/uploads/${item.product.photos[0].filename}`"
+        v-if="thumbSrc"
+        :src="thumbSrc"
         class="item-thumb"
       />
       <div v-else class="item-thumb-placeholder">?</div>
@@ -31,6 +31,14 @@ const props = defineProps({
 })
 
 defineEmits(['check-off', 'remove'])
+
+const thumbSrc = computed(() => {
+  const photos = props.item.product.photos || []
+  const primary = photos.find(p => p.is_primary) || photos[0]
+  if (primary) return `/uploads/${primary.filename}`
+  if (props.item.product.image_url) return props.item.product.image_url
+  return null
+})
 
 const bestPrice = computed(() => {
   const stores = props.item.product.stores || []

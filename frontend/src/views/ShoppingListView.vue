@@ -1,6 +1,6 @@
 <template>
   <div class="shopping-list-view">
-    <AddItemBar />
+    <AddItemBar @new-product="openSetupDialog" />
     <div v-if="list.loading && !list.items.length" class="loading">Loading...</div>
     <div v-else-if="!list.items.length" class="empty">
       <p>Your shopping list is empty.</p>
@@ -21,6 +21,12 @@
       @close="checkOffVisible = false"
       @confirm="handleCheckOff"
     />
+    <NewItemSetupDialog
+      :visible="setupDialogVisible"
+      :product="setupProduct"
+      @close="setupDialogVisible = false"
+      @saved="handleSetupSaved"
+    />
   </div>
 </template>
 
@@ -30,11 +36,14 @@ import { useShoppingListStore } from '../stores/shoppingList.js'
 import AddItemBar from '../components/AddItemBar.vue'
 import ListItem from '../components/ListItem.vue'
 import CheckOffDialog from '../components/CheckOffDialog.vue'
+import NewItemSetupDialog from '../components/NewItemSetupDialog.vue'
 
 const list = useShoppingListStore()
 
 const checkOffVisible = ref(false)
 const checkOffItem = ref(null)
+const setupDialogVisible = ref(false)
+const setupProduct = ref(null)
 
 onMounted(() => {
   list.fetchItems()
@@ -55,6 +64,17 @@ async function handleRemove(item) {
   if (confirm(`Remove "${item.product.name}" from the list?`)) {
     await list.removeItem(item.id)
   }
+}
+
+function openSetupDialog(product) {
+  setupProduct.value = product
+  setupDialogVisible.value = true
+}
+
+function handleSetupSaved() {
+  setupDialogVisible.value = false
+  setupProduct.value = null
+  list.fetchItems()
 }
 </script>
 

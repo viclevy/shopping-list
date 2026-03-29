@@ -1,4 +1,5 @@
 import os
+import sqlite3
 
 import uvicorn
 from fastapi import FastAPI, Request, Response
@@ -92,6 +93,20 @@ INITIAL_STORES = [
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight migration: add new columns if missing
+    db_path = os.path.join(settings.data_dir, "shopping_list.db")
+    if os.path.exists(db_path):
+        conn = sqlite3.connect(db_path)
+        product_cols = [row[1] for row in conn.execute("PRAGMA table_info(products)").fetchall()]
+        if "image_url" not in product_cols:
+            conn.execute("ALTER TABLE products ADD COLUMN image_url TEXT")
+        photo_cols = [row[1] for row in conn.execute("PRAGMA table_info(product_photos)").fetchall()]
+        if "is_primary" not in photo_cols:
+            conn.execute("ALTER TABLE product_photos ADD COLUMN is_primary BOOLEAN DEFAULT 0")
+        conn.commit()
+        conn.close()
+
     db = SessionLocal()
     try:
         # Bootstrap admin user
