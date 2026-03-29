@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session, joinedload
@@ -8,7 +8,7 @@ from auth import get_current_user
 from database import get_db
 from models import HistoryEvent, Product, ProductPhoto, ProductStore, Store, User
 from photo_utils import delete_photo, save_photo, save_photo_from_url
-from schemas import ProductCreate, ProductRead, ProductStoreRead, ProductUpdate
+from schemas import ProductCreate, ProductRead, ProductStoreRead, ProductUpdate, StorePriceByName
 
 router = APIRouter()
 
@@ -234,3 +234,33 @@ def set_primary_photo(
     photo.is_primary = True
     db.commit()
     return get_product(product_id, db, _user)
+
+
+@router.post("/{product_id}/store-prices")
+def save_store_prices(
+    product_id: int,
+    prices: List[StorePriceByName],
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    for sp in prices:
+        store = db.query(Store).filter(Store.name.ilike(sp.store_name)).first()
+        if not store:
+            store = Store(name=sp.store_name)
+            db.add(store)
+            db.flush()
+        existing = db.query(ProductStore).filter(
+            ProductStore.product_id == product_id,
+            ProductStore.store_id == store.id,
+        ).first()
+        if existing:
+            existing.price = sp.price
+        else:
+            db.add(ProductStore(product_id=product_id, store_id=store.id, price=sp.price))
+
+    db.commit()
+    return {"status": "ok"}

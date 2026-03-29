@@ -3,17 +3,16 @@ from typing import List
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
 from auth import get_current_user
 from database import get_db
-from web_search import suggest_product_info
 from models import (
     HistoryEvent,
     Product,
     ProductStore,
     ShoppingListItem,
-    Store,
     User,
 )
 from schemas import (
@@ -31,8 +30,9 @@ router = APIRouter()
 ws_manager = None
 
 
-def _item_to_read(item: ShoppingListItem) -> ShoppingListItemRead:
+def _item_to_read(item: ShoppingListItem, last_price_map: dict = None) -> ShoppingListItemRead:
     product = item.product
+    lp = (last_price_map or {}).get(product.id)
     return ShoppingListItemRead(
         id=item.id,
         product=ProductRead(
@@ -56,7 +56,25 @@ def _item_to_read(item: ShoppingListItem) -> ShoppingListItemRead:
         unit=item.unit,
         added_by=item.user.username,
         added_at=item.added_at,
+        last_price=lp[0] if lp else None,
+        last_store_id=lp[1] if lp else None,
     )
+
+
+def _last_price_for(db: Session, product_id: int) -> dict:
+    event = (
+        db.query(HistoryEvent)
+        .filter(
+            HistoryEvent.product_id == product_id,
+            HistoryEvent.action == "checked_off",
+            HistoryEvent.price.isnot(None),
+        )
+        .order_by(HistoryEvent.timestamp.desc())
+        .first()
+    )
+    if event:
+        return {product_id: (event.price, event.store_id)}
+    return {}
 
 
 def _get_all_items(db: Session) -> List[ShoppingListItemRead]:
@@ -75,12 +93,39 @@ def _get_all_items(db: Session) -> List[ShoppingListItemRead]:
     )
     # Deduplicate from joinedload
     seen = set()
-    result = []
+    unique_items = []
     for item in items:
         if item.id not in seen:
             seen.add(item.id)
-            result.append(_item_to_read(item))
-    return result
+            unique_items.append(item)
+
+    # Batch fetch last purchase price per product
+    product_ids = list({item.product_id for item in unique_items})
+    last_price_map = {}
+    if product_ids:
+        subq = (
+            db.query(
+                HistoryEvent.product_id,
+                func.max(HistoryEvent.id).label("max_id"),
+            )
+            .filter(
+                HistoryEvent.product_id.in_(product_ids),
+                HistoryEvent.action == "checked_off",
+                HistoryEvent.price.isnot(None),
+            )
+            .group_by(HistoryEvent.product_id)
+            .subquery()
+        )
+        last_events = (
+            db.query(HistoryEvent)
+            .join(subq, HistoryEvent.id == subq.c.max_id)
+            .all()
+        )
+        last_price_map = {
+            e.product_id: (e.price, e.store_id) for e in last_events
+        }
+
+    return [_item_to_read(item, last_price_map) for item in unique_items]
 
 
 async def _broadcast_list(db: Session):
@@ -119,30 +164,6 @@ async def add_item(
             product = Product(name=body.product_name)
             db.add(product)
             db.flush()
-            try:
-                suggestion = await suggest_product_info(body.product_name)
-                if suggestion.get("category"):
-                    product.category = suggestion["category"]
-                if suggestion.get("image_url"):
-                    product.image_url = suggestion["image_url"]
-                # Create ProductStore records from scraper prices
-                for sp in suggestion.get("store_prices", []):
-                    if sp.get("price") is None:
-                        continue
-                    store = db.query(Store).filter(
-                        Store.name.ilike(sp["store"])
-                    ).first()
-                    if not store:
-                        store = Store(name=sp["store"])
-                        db.add(store)
-                        db.flush()
-                    db.add(ProductStore(
-                        product_id=product.id,
-                        store_id=store.id,
-                        price=sp["price"],
-                    ))
-            except Exception:
-                pass
     else:
         raise HTTPException(status_code=400, detail="product_id or product_name required")
 
@@ -176,7 +197,7 @@ async def add_item(
     db.refresh(item)
 
     await _broadcast_list(db)
-    return _item_to_read(
+    loaded = (
         db.query(ShoppingListItem)
         .options(
             joinedload(ShoppingListItem.product).joinedload(Product.photos),
@@ -186,6 +207,7 @@ async def add_item(
         .filter(ShoppingListItem.id == item.id)
         .first()
     )
+    return _item_to_read(loaded, _last_price_for(db, loaded.product_id))
 
 
 @router.put("/{item_id}", response_model=ShoppingListItemRead)
@@ -220,7 +242,7 @@ async def edit_item(
     db.commit()
     await _broadcast_list(db)
 
-    return _item_to_read(
+    loaded = (
         db.query(ShoppingListItem)
         .options(
             joinedload(ShoppingListItem.product).joinedload(Product.photos),
@@ -230,6 +252,7 @@ async def edit_item(
         .filter(ShoppingListItem.id == item_id)
         .first()
     )
+    return _item_to_read(loaded, _last_price_for(db, loaded.product_id))
 
 
 @router.post("/{item_id}/check-off", status_code=200)

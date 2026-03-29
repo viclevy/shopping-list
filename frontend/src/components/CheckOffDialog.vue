@@ -45,21 +45,42 @@ onMounted(async () => {
 
 watch(() => props.visible, (val) => {
   if (val && props.item) {
-    storeId.value = session.selectedStoreId
-    // Pre-fill price from product's store data
-    const ps = props.item.product.stores?.find(s => s.store_id === storeId.value)
-    price.value = ps?.price ?? null
+    storeId.value = session.selectedStoreId || props.item.last_store_id || null
+    fillPrice()
   }
 })
 
-watch(storeId, (id) => {
-  if (id && props.item) {
-    const ps = props.item.product.stores?.find(s => s.store_id === id)
-    if (ps?.price != null && price.value == null) {
+watch(storeId, () => {
+  fillPrice()
+})
+
+function fillPrice() {
+  if (!props.item) return
+
+  // Priority 1: ProductStore price for selected store
+  if (storeId.value) {
+    const ps = props.item.product.stores?.find(s => s.store_id === storeId.value)
+    if (ps?.price != null) {
       price.value = ps.price
+      return
     }
   }
-})
+
+  // Priority 2: Last purchase price from history
+  if (props.item.last_price != null) {
+    price.value = props.item.last_price
+    return
+  }
+
+  // Priority 3: Best available ProductStore price (any store)
+  const withPrice = (props.item.product.stores || []).filter(s => s.price != null)
+  if (withPrice.length) {
+    price.value = Math.min(...withPrice.map(s => s.price))
+    return
+  }
+
+  price.value = null
+}
 
 function confirm() {
   if (storeId.value) {

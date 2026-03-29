@@ -113,6 +113,8 @@ class ShoppingListItemRead(BaseModel):
     unit: Optional[str] = None
     added_by: str
     added_at: datetime
+    last_price: Optional[float] = None
+    last_store_id: Optional[int] = None
 
     model_config = {"from_attributes": True}
 
@@ -167,3 +169,18 @@ class MemberContribution(BaseModel):
     items_added: int
     items_bought: int
     total_spent: float
+
+
+class StorePriceByName(BaseModel):
+    store_name: str
+    price: float
+
+
+class BoughtBeforeItem(BaseModel):
+    product_id: int
+    product_name: str
+    category: Optional[str] = None
+    image_url: Optional[str] = None
+    purchase_count: int
+    last_purchased: Optional[datetime] = None
+    score: float

@@ -5,6 +5,9 @@ import api from '../api.js'
 export const useShoppingListStore = defineStore('shoppingList', () => {
   const items = ref([])
   const loading = ref(false)
+  const boughtBefore = ref([])
+  const boughtBeforeLoading = ref(false)
+  let bbTimer = null
 
   async function fetchItems() {
     loading.value = true
@@ -15,6 +18,18 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
       // ignore
     } finally {
       loading.value = false
+    }
+  }
+
+  async function fetchBoughtBefore() {
+    boughtBeforeLoading.value = true
+    try {
+      const res = await api.get('/analytics/bought-before')
+      boughtBefore.value = res.data
+    } catch {
+      boughtBefore.value = []
+    } finally {
+      boughtBeforeLoading.value = false
     }
   }
 
@@ -38,7 +53,13 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
 
   function setItems(newItems) {
     items.value = newItems
+    clearTimeout(bbTimer)
+    bbTimer = setTimeout(fetchBoughtBefore, 500)
   }
 
-  return { items, loading, fetchItems, addItem, editItem, checkOff, removeItem, setItems }
+  return {
+    items, loading, fetchItems,
+    boughtBefore, boughtBeforeLoading, fetchBoughtBefore,
+    addItem, editItem, checkOff, removeItem, setItems,
+  }
 })

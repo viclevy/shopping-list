@@ -147,6 +147,17 @@ async function save() {
         // non-fatal — image save failure shouldn't block category save
       }
     }
+    // Save store prices from scraper results
+    if (storePrices.value.length && props.product.id) {
+      try {
+        await api.post(
+          `/products/${props.product.id}/store-prices`,
+          storePrices.value.map(sp => ({ store_name: sp.store, price: sp.price }))
+        )
+      } catch {
+        // non-fatal
+      }
+    }
     emit('saved')
   } catch {
     alert('Failed to save. Please try again.')

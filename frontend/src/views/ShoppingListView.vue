@@ -15,6 +15,7 @@
         @remove="handleRemove(item)"
       />
     </div>
+    <BoughtBeforeSection />
     <CheckOffDialog
       :visible="checkOffVisible"
       :item="checkOffItem"
@@ -35,6 +36,7 @@ import { ref, onMounted } from 'vue'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import AddItemBar from '../components/AddItemBar.vue'
 import ListItem from '../components/ListItem.vue'
+import BoughtBeforeSection from '../components/BoughtBeforeSection.vue'
 import CheckOffDialog from '../components/CheckOffDialog.vue'
 import NewItemSetupDialog from '../components/NewItemSetupDialog.vue'
 
@@ -47,6 +49,7 @@ const setupProduct = ref(null)
 
 onMounted(() => {
   list.fetchItems()
+  list.fetchBoughtBefore()
 })
 
 function openCheckOff(item) {

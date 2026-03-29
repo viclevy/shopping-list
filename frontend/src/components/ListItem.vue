@@ -10,9 +10,14 @@
       <div class="item-info">
         <span class="item-name">{{ item.product.name }}</span>
         <span class="item-meta">
-          {{ item.quantity }}{{ item.unit ? ' ' + item.unit : '' }}
-          <span class="item-by"> &middot; {{ item.added_by }}</span>
+          <span class="qty-stepper" @click.stop>
+            <button class="qty-btn" @click="decrement" :disabled="item.quantity <= 1 || updating">-</button>
+            <span class="qty-value">{{ displayQty }}</span>
+            <button class="qty-btn" @click="increment" :disabled="updating">+</button>
+          </span>
+          <span v-if="item.unit" class="qty-unit">{{ item.unit }}</span>
         </span>
+        <span class="item-by">{{ item.added_by }}</span>
         <span v-if="bestPrice !== null" class="item-price">${{ bestPrice.toFixed(2) }}</span>
       </div>
     </div>
@@ -24,13 +29,17 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useShoppingListStore } from '../stores/shoppingList.js'
 
 const props = defineProps({
   item: { type: Object, required: true },
 })
 
 defineEmits(['check-off', 'remove'])
+
+const list = useShoppingListStore()
+const updating = ref(false)
 
 const thumbSrc = computed(() => {
   const photos = props.item.product.photos || []
@@ -46,6 +55,30 @@ const bestPrice = computed(() => {
   if (!withPrice.length) return null
   return Math.min(...withPrice.map(s => s.price))
 })
+
+const displayQty = computed(() => {
+  const q = props.item.quantity
+  return Number.isInteger(q) ? q : q.toFixed(1)
+})
+
+async function increment() {
+  updating.value = true
+  try {
+    await list.editItem(props.item.id, { quantity: props.item.quantity + 1 })
+  } finally {
+    updating.value = false
+  }
+}
+
+async function decrement() {
+  if (props.item.quantity <= 1) return
+  updating.value = true
+  try {
+    await list.editItem(props.item.id, { quantity: props.item.quantity - 1 })
+  } finally {
+    updating.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -104,9 +137,59 @@ const bestPrice = computed(() => {
 .item-meta {
   font-size: 13px;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qty-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.qty-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.qty-btn:not(:disabled):hover {
+  background: var(--text-secondary);
+  color: white;
+}
+
+.qty-value {
+  min-width: 20px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.qty-unit {
+  margin-left: 2px;
 }
 
 .item-by {
+  font-size: 12px;
+  color: var(--text-secondary);
   opacity: 0.7;
 }
 
