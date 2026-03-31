@@ -16,7 +16,7 @@
     <div v-else class="user-list">
       <div v-for="user in users" :key="user.id" class="user-row card">
         <div class="user-info">
-          <span class="user-name">{{ user.username }}</span>
+          <span class="user-name">{{ displayName(user.username) }}</span>
           <span v-if="user.is_admin" class="admin-badge">Admin</span>
           <span class="user-date">Created {{ formatDate(user.created_at) }}</span>
         </div>
@@ -36,6 +36,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../api.js'
+import { displayName } from '../utils.js'
 
 const users = ref([])
 const loading = ref(false)
@@ -70,13 +71,13 @@ async function createUser() {
 }
 
 async function deleteUser(user) {
-  if (!confirm(`Delete user "${user.username}"?`)) return
+  if (!confirm(`Delete user "${displayName(user.username)}"?`)) return
   await api.delete(`/users/${user.id}`)
   await loadUsers()
 }
 
 async function resetPassword(user) {
-  const pwd = prompt(`New password for "${user.username}":`)
+  const pwd = prompt(`New password for "${displayName(user.username)}":`)
   if (!pwd) return
   await api.put(`/users/${user.id}/password`, { password: pwd })
   alert('Password updated.')

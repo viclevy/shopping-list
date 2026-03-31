@@ -61,6 +61,7 @@ import {
   Title, Tooltip, Legend,
 } from 'chart.js'
 import api from '../api.js'
+import { displayName } from '../utils.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend)
 
@@ -103,7 +104,7 @@ const categoryData = computed(() => {
 const contributionData = computed(() => {
   if (!contributions.value.length) return null
   return {
-    labels: contributions.value.map(c => c.username),
+    labels: contributions.value.map(c => displayName(c.username)),
     datasets: [
       { label: 'Added', data: contributions.value.map(c => c.items_added), backgroundColor: '#2196F3' },
       { label: 'Bought', data: contributions.value.map(c => c.items_bought), backgroundColor: '#4CAF50' },

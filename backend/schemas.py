@@ -1,13 +1,32 @@
+import re
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+
+def _normalize_text(v: str) -> str:
+    """Strip, collapse spaces, and title-case a string."""
+    if v is None:
+        return v
+    v = re.sub(r"\s+", " ", v.strip())
+    return v.title() if v else v
+
+
+def _normalize_category(v: str) -> str:
+    """Strip, collapse spaces, and title-case a category string."""
+    return _normalize_text(v)
 
 
 # --- Auth ---
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+    @field_validator("username")
+    @classmethod
+    def normalize_username(cls, v: str) -> str:
+        return v.strip().lower()
 
 
 class TokenResponse(BaseModel):
@@ -19,6 +38,11 @@ class TokenResponse(BaseModel):
 class UserCreate(BaseModel):
     username: str
     password: str
+
+    @field_validator("username")
+    @classmethod
+    def normalize_username(cls, v: str) -> str:
+        return v.strip().lower()
 
 
 class UserRead(BaseModel):
@@ -72,12 +96,32 @@ class ProductCreate(BaseModel):
     store_ids: Optional[List[int]] = None
     prices: Optional[Dict[int, Optional[float]]] = None  # store_id -> price
 
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, v: str) -> str:
+        return _normalize_text(v)
+
+    @field_validator("category")
+    @classmethod
+    def normalize_category(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_category(v) if v else v
+
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
     store_ids: Optional[List[int]] = None
     prices: Optional[Dict[int, Optional[float]]] = None
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_text(v) if v else v
+
+    @field_validator("category")
+    @classmethod
+    def normalize_category(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_category(v) if v else v
 
 
 class ProductRead(BaseModel):
@@ -99,6 +143,11 @@ class ShoppingListItemCreate(BaseModel):
     product_name: Optional[str] = None
     quantity: float = 1
     unit: Optional[str] = None
+
+    @field_validator("product_name")
+    @classmethod
+    def normalize_product_name(cls, v: Optional[str]) -> Optional[str]:
+        return _normalize_text(v) if v else v
 
 
 class ShoppingListItemUpdate(BaseModel):

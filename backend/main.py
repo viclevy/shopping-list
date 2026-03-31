@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 
 import uvicorn
@@ -10,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from auth import hash_password
 from config import settings
 from database import Base, SessionLocal, engine
-from models import Store, User
+from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, User
 from routers import (
     analytics_router,
     auth_router,
@@ -109,6 +110,53 @@ def startup():
 
     db = SessionLocal()
     try:
+        # Normalize existing categories to Title Case
+        products_with_cat = db.query(Product).filter(Product.category.isnot(None)).all()
+        for p in products_with_cat:
+            normalized = re.sub(r"\s+", " ", p.category.strip()).title()
+            if normalized != p.category:
+                p.category = normalized
+        # Normalize existing usernames to lowercase
+        all_users = db.query(User).all()
+        for u in all_users:
+            lowered = u.username.strip().lower()
+            if lowered != u.username:
+                u.username = lowered
+
+        # Normalize existing product names to Title Case and merge duplicates
+        all_products = db.query(Product).all()
+        name_map = {}  # normalized_name -> keeper Product
+        for p in all_products:
+            normalized = re.sub(r"\s+", " ", p.name.strip()).title()
+            if normalized in name_map:
+                keeper = name_map[normalized]
+                # Re-point child FKs from duplicate to keeper
+                db.query(ShoppingListItem).filter(ShoppingListItem.product_id == p.id).update(
+                    {"product_id": keeper.id}, synchronize_session="fetch")
+                db.query(HistoryEvent).filter(HistoryEvent.product_id == p.id).update(
+                    {"product_id": keeper.id}, synchronize_session="fetch")
+                db.query(ProductPhoto).filter(ProductPhoto.product_id == p.id).update(
+                    {"product_id": keeper.id}, synchronize_session="fetch")
+                # Merge store associations (skip duplicates)
+                for ps in db.query(ProductStore).filter(ProductStore.product_id == p.id).all():
+                    existing = db.query(ProductStore).filter(
+                        ProductStore.product_id == keeper.id,
+                        ProductStore.store_id == ps.store_id,
+                    ).first()
+                    if existing:
+                        if ps.price is not None and existing.price is None:
+                            existing.price = ps.price
+                        db.delete(ps)
+                    else:
+                        ps.product_id = keeper.id
+                db.delete(p)
+            else:
+                if normalized != p.name:
+                    p.name = normalized
+                name_map[normalized] = p
+
+        db.commit()
+
         # Bootstrap admin user
         admin = db.query(User).filter(User.username == "admin").first()
         if not admin:

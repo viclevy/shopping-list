@@ -25,7 +25,7 @@
           </span>
         </div>
         <div class="event-meta">
-          <span>{{ event.username }}</span>
+          <span>{{ displayName(event.username) }}</span>
           <span>{{ formatDate(event.timestamp) }}</span>
           <span v-if="event.store_name" class="event-store">@ {{ event.store_name }}</span>
           <span v-if="event.price" class="event-price">${{ event.price.toFixed(2) }}</span>
@@ -43,6 +43,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '../api.js'
+import { displayName } from '../utils.js'
 
 const events = ref([])
 const loading = ref(false)

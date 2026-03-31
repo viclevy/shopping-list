@@ -17,7 +17,7 @@
           </span>
           <span v-if="item.unit" class="qty-unit">{{ item.unit }}</span>
         </span>
-        <span class="item-by">{{ item.added_by }}</span>
+        <span class="item-by">{{ displayName(item.added_by) }}</span>
         <span v-if="bestPrice !== null" class="item-price">${{ bestPrice.toFixed(2) }}</span>
       </div>
     </div>
@@ -31,6 +31,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useShoppingListStore } from '../stores/shoppingList.js'
+import { displayName } from '../utils.js'
 
 const props = defineProps({
   item: { type: Object, required: true },

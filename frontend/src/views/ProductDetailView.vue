@@ -76,7 +76,7 @@
           <div v-for="event in history" :key="event.id" class="history-row">
             <span class="history-date">{{ formatDate(event.timestamp) }}</span>
             <span class="history-action" :class="event.action">{{ event.action }}</span>
-            <span class="history-user">{{ event.username }}</span>
+            <span class="history-user">{{ displayName(event.username) }}</span>
             <span v-if="event.price" class="history-price">${{ event.price.toFixed(2) }}</span>
           </div>
         </div>
@@ -91,6 +91,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api.js'
+import { normalizeCategory, displayName } from '../utils.js'
 import PhotoPicker from '../components/PhotoPicker.vue'
 import ImageSearchPicker from '../components/ImageSearchPicker.vue'
 
@@ -142,7 +143,7 @@ async function saveDetails() {
   try {
     await api.put(`/products/${product.value.id}`, {
       name: editName.value,
-      category: editCategory.value || null,
+      category: normalizeCategory(editCategory.value) || null,
     })
     saving.value = 'done'
     setTimeout(() => router.back(), 400)

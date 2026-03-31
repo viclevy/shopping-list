@@ -13,7 +13,7 @@
     <div class="header-right">
       <VoiceButton />
       <div class="user-menu">
-        <span class="username">{{ auth.user?.username }}</span>
+        <span class="username">{{ displayName(auth.user?.username) }}</span>
         <button class="btn-secondary btn-sm" @click="handleLogout">Logout</button>
       </div>
     </div>
@@ -23,6 +23,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
+import { displayName } from '../utils.js'
 import VoiceButton from './VoiceButton.vue'
 
 const auth = useAuthStore()

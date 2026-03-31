@@ -73,6 +73,7 @@
 <script setup>
 import { ref, watch } from 'vue'
 import api from '../api.js'
+import { normalizeCategory } from '../utils.js'
 import ImageSearchPicker from './ImageSearchPicker.vue'
 
 const props = defineProps({
@@ -135,7 +136,7 @@ async function save() {
   if (!props.product) return
   saving.value = true
   try {
-    const newCategory = category.value.trim() || null
+    const newCategory = normalizeCategory(category.value) || null
     if (newCategory !== (props.product.category || null)) {
       await api.put(`/products/${props.product.id}`, { category: newCategory })
     }
