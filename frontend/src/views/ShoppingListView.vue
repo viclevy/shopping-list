@@ -35,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import AddItemBar from '../components/AddItemBar.vue'
 import ListItem from '../components/ListItem.vue'
@@ -69,6 +69,14 @@ const setupProduct = ref(null)
 onMounted(() => {
   list.fetchItems()
   list.fetchBoughtBefore()
+})
+
+// Watch for voice-added new products that need setup
+watch(() => list.pendingSetupProduct, (product) => {
+  if (product) {
+    openSetupDialog(product)
+    list.pendingSetupProduct = null
+  }
 })
 
 function openCheckOff(item) {

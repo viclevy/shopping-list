@@ -90,12 +90,16 @@ export function useVoice() {
       try {
         const cmd = parseCommand(text)
         if (cmd.action === 'add') {
-          await list.addItem({
+          const result = await list.addItem({
             product_name: cmd.productName,
             quantity: cmd.quantity,
             unit: cmd.unit,
           })
           speak(`Added ${cmd.productName} to the list`)
+          // If the product is new (no category yet), trigger the setup dialog
+          if (result?.product && !result.product.category) {
+            list.pendingSetupProduct = result.product
+          }
         } else if (cmd.action === 'remove') {
           const item = list.items.find(i =>
             i.product.name.toLowerCase().includes(cmd.productName.toLowerCase())

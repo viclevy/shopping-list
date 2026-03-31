@@ -7,6 +7,7 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
   const loading = ref(false)
   const boughtBefore = ref([])
   const boughtBeforeLoading = ref(false)
+  const pendingSetupProduct = ref(null)
   let bbTimer = null
 
   async function fetchItems() {
@@ -61,5 +62,6 @@ export const useShoppingListStore = defineStore('shoppingList', () => {
     items, loading, fetchItems,
     boughtBefore, boughtBeforeLoading, fetchBoughtBefore,
     addItem, editItem, checkOff, removeItem, setItems,
+    pendingSetupProduct,
   }
 })
