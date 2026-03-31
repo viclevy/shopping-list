@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from auth import get_current_user
 from database import get_db
-from models import HistoryEvent, Product, ShoppingListItem, Store, User
+from models import HistoryEvent, Product, ProductPhoto, ShoppingListItem, Store, User
 from schemas import (
     BoughtBeforeItem,
     FrequentItem,
@@ -231,6 +231,22 @@ def bought_before(
 
     now = datetime.utcnow()
     results = []
+
+    # Collect product IDs that need photo lookup
+    product_ids = [r.product_id for r in rows if r.product_id not in on_list_ids]
+    # Fetch primary (or first) photo for each product in one query
+    photo_map = {}
+    if product_ids:
+        photos = (
+            db.query(ProductPhoto)
+            .filter(ProductPhoto.product_id.in_(product_ids))
+            .order_by(ProductPhoto.is_primary.desc(), ProductPhoto.id)
+            .all()
+        )
+        for photo in photos:
+            if photo.product_id not in photo_map:
+                photo_map[photo.product_id] = photo.filename
+
     for r in rows:
         if r.product_id in on_list_ids:
             continue
@@ -242,6 +258,7 @@ def bought_before(
             product_name=r.name,
             category=r.category,
             image_url=r.image_url,
+            photo_filename=photo_map.get(r.product_id),
             purchase_count=r.purchase_count,
             last_purchased=r.last_purchased,
             score=round(score, 4),

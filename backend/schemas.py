@@ -230,6 +230,7 @@ class BoughtBeforeItem(BaseModel):
     product_name: str
     category: Optional[str] = None
     image_url: Optional[str] = None
+    photo_filename: Optional[str] = None
     purchase_count: int
     last_purchased: Optional[datetime] = None
     score: float

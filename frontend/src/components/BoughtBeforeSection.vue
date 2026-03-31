@@ -11,8 +11,8 @@
         class="bought-item card"
       >
         <img
-          v-if="item.image_url"
-          :src="item.image_url"
+          v-if="thumbSrc(item)"
+          :src="thumbSrc(item)"
           class="bought-thumb"
         />
         <div v-else class="bought-thumb-placeholder">?</div>
@@ -38,6 +38,12 @@ import { useShoppingListStore } from '../stores/shoppingList.js'
 const list = useShoppingListStore()
 const expanded = ref(true)
 const adding = ref(null)
+
+function thumbSrc(item) {
+  if (item.photo_filename) return `/uploads/${item.photo_filename}`
+  if (item.image_url) return item.image_url
+  return null
+}
 
 async function readd(item) {
   adding.value = item.product_id
