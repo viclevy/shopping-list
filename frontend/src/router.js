@@ -43,6 +43,12 @@ const routes = [
     component: () => import('./views/StoresView.vue'),
     meta: { auth: true },
   },
+  {
+    path: '/items',
+    name: 'items',
+    component: () => import('./views/ItemsView.vue'),
+    meta: { auth: true },
+  },
 ]
 
 const router = createRouter({

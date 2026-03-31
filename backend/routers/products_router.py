@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from auth import get_current_user
 from database import get_db
-from models import HistoryEvent, Product, ProductPhoto, ProductStore, Store, User
+from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, User
 from photo_utils import delete_photo, save_photo, save_photo_from_url
 from schemas import ProductCreate, ProductRead, ProductStoreRead, ProductUpdate, StorePriceByName
 
@@ -36,6 +36,7 @@ def _product_to_read(product: Product) -> ProductRead:
 @router.get("", response_model=List[ProductRead])
 def list_products(
     q: str = Query(None),
+    sort: str = Query("name"),
     db: Session = Depends(get_db),
     _user: User = Depends(get_current_user),
 ):
@@ -45,7 +46,10 @@ def list_products(
     )
     if q:
         query = query.filter(Product.name.ilike("%%%s%%" % q))
-    products = query.order_by(Product.name).all()
+    if sort == "newest":
+        products = query.order_by(Product.created_at.desc()).all()
+    else:
+        products = query.order_by(Product.name).all()
     # Deduplicate due to joinedload
     seen = set()
     result = []
@@ -262,3 +266,44 @@ def save_store_prices(
 
     db.commit()
     return {"status": "ok"}
+
+
+@router.get("/{product_id}/delete-preview")
+def delete_preview(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    product = db.query(Product).filter(Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    history_count = db.query(HistoryEvent).filter(HistoryEvent.product_id == product_id).count()
+    list_count = db.query(ShoppingListItem).filter(ShoppingListItem.product_id == product_id).count()
+    photo_count = db.query(ProductPhoto).filter(ProductPhoto.product_id == product_id).count()
+    return {
+        "product": {"id": product.id, "name": product.name},
+        "history_events": history_count,
+        "list_items": list_count,
+        "photos": photo_count,
+    }
+
+
+@router.delete("/{product_id}", status_code=204)
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    product = (
+        db.query(Product)
+        .options(joinedload(Product.photos))
+        .filter(Product.id == product_id)
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    # Delete photo files from disk
+    for photo in product.photos:
+        delete_photo(photo.filename)
+    db.delete(product)
+    db.commit()

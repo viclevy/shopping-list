@@ -8,6 +8,7 @@
       <router-link to="/history">History</router-link>
       <router-link to="/analytics">Analytics</router-link>
       <router-link to="/stores">Stores</router-link>
+      <router-link to="/items">Items</router-link>
       <router-link v-if="auth.isAdmin" to="/admin/users">Users</router-link>
     </nav>
     <div class="header-right">
