@@ -4,14 +4,27 @@
       <h3>Check off: {{ item.product.name }}</h3>
       <div class="field">
         <label>Store</label>
-        <select v-model="storeId">
-          <option :value="null">-- No store --</option>
-          <option v-for="store in stores" :key="store.id" :value="store.id">{{ store.name }}</option>
-        </select>
+        <div class="store-chips">
+          <button
+            v-for="store in stores"
+            :key="store.id"
+            class="chip"
+            :class="{ active: storeId === store.id }"
+            @click="storeId = storeId === store.id ? null : store.id"
+          >{{ store.name }}</button>
+        </div>
       </div>
       <div class="field">
         <label>Price</label>
-        <input v-model.number="price" type="number" min="0" step="0.01" placeholder="Price" />
+        <input
+          ref="priceInput"
+          :value="priceDisplay"
+          type="text"
+          inputmode="numeric"
+          placeholder="0.00"
+          @input="onPriceInput"
+          @keydown="onPriceKeydown"
+        />
       </div>
       <div class="dialog-actions">
         <button class="btn-secondary" @click="$emit('close')">Cancel</button>
@@ -22,7 +35,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useSessionStore } from '../stores/session.js'
 import api from '../api.js'
 
@@ -36,7 +49,47 @@ const emit = defineEmits(['close', 'confirm'])
 const session = useSessionStore()
 const stores = ref([])
 const storeId = ref(null)
-const price = ref(null)
+const priceInput = ref(null)
+
+// Implied-decimal: store raw digits as a string (e.g. "123" means $1.23)
+const priceDigits = ref('')
+
+const priceDisplay = computed(() => {
+  if (!priceDigits.value) return ''
+  const cents = parseInt(priceDigits.value, 10)
+  return (cents / 100).toFixed(2)
+})
+
+const priceValue = computed(() => {
+  if (!priceDigits.value) return null
+  return parseInt(priceDigits.value, 10) / 100
+})
+
+function setPriceFromFloat(val) {
+  if (val == null) {
+    priceDigits.value = ''
+  } else {
+    priceDigits.value = String(Math.round(val * 100))
+  }
+}
+
+function onPriceInput(e) {
+  // Extract only digits from whatever was typed/pasted
+  const digits = e.data?.replace(/\D/g, '') || ''
+  if (digits) {
+    priceDigits.value += digits
+  }
+  // Force the displayed value to our formatted version
+  e.target.value = priceDisplay.value
+}
+
+function onPriceKeydown(e) {
+  if (e.key === 'Backspace') {
+    e.preventDefault()
+    priceDigits.value = priceDigits.value.slice(0, -1)
+    e.target.value = priceDisplay.value
+  }
+}
 
 onMounted(async () => {
   const res = await api.get('/stores')
@@ -61,25 +114,25 @@ function fillPrice() {
   if (storeId.value) {
     const ps = props.item.product.stores?.find(s => s.store_id === storeId.value)
     if (ps?.price != null) {
-      price.value = ps.price
+      setPriceFromFloat(ps.price)
       return
     }
   }
 
   // Priority 2: Last purchase price from history
   if (props.item.last_price != null) {
-    price.value = props.item.last_price
+    setPriceFromFloat(props.item.last_price)
     return
   }
 
   // Priority 3: Best available ProductStore price (any store)
   const withPrice = (props.item.product.stores || []).filter(s => s.price != null)
   if (withPrice.length) {
-    price.value = Math.min(...withPrice.map(s => s.price))
+    setPriceFromFloat(Math.min(...withPrice.map(s => s.price)))
     return
   }
 
-  price.value = null
+  priceDigits.value = ''
 }
 
 function confirm() {
@@ -88,7 +141,7 @@ function confirm() {
   }
   emit('confirm', {
     store_id: storeId.value,
-    price: price.value,
+    price: priceValue.value,
   })
 }
 </script>
@@ -130,5 +183,28 @@ function confirm() {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+}
+
+.store-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-color, #ccc);
+  background: var(--bg-secondary, #f5f5f5);
+  color: var(--text-primary, #333);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chip.active {
+  background: var(--primary, #4a90d9);
+  color: #fff;
+  border-color: var(--primary, #4a90d9);
 }
 </style>
