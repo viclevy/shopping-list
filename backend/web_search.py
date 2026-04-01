@@ -82,16 +82,38 @@ Example: {{"category": "Dairy", "price": 4.29, "stores": ["Walmart", "Kroger", "
         return {"category": None, "price": None, "stores": []}
 
 
-def _search_serpapi(product_name: str, start: int = 0) -> dict:
-    """Call SerpAPI Google Shopping. Returns {store_prices, images, image_url}."""
+def _store_matches(source: str, store_names: list[str]) -> bool:
+    """Check if a SerpAPI source matches any user store name (fuzzy)."""
+    src = source.lower().replace(".com", "").replace(".ca", "").strip()
+    for name in store_names:
+        n = name.lower().strip()
+        if n in src or src in n:
+            return True
+    return False
+
+
+def _search_serpapi(
+    product_name: str, start: int = 0, store_names: list[str] | None = None,
+) -> dict:
+    """Call SerpAPI Google Shopping. Returns {store_prices, images, image_url}.
+
+    If store_names is provided, the query is biased toward those stores
+    and results are post-sorted so store-matched images appear first.
+    """
     if not settings.serpapi_key:
         return {"store_prices": [], "images": [], "image_url": None}
+
+    # Build a store-biased query when stores are available
+    query = product_name
+    if store_names:
+        store_clause = " OR ".join(store_names)
+        query = f"{product_name} {store_clause}"
 
     try:
         client = serpapi.Client(api_key=settings.serpapi_key)
         params = {
             "engine": "google_shopping",
-            "q": product_name,
+            "q": query,
             "hl": "en",
             "gl": "us",
             "num": 10,
@@ -103,6 +125,12 @@ def _search_serpapi(product_name: str, start: int = 0) -> dict:
         return {"store_prices": [], "images": [], "image_url": None}
 
     shopping = results.get("shopping_results", [])
+
+    # Post-sort: store-matched results first, preserving original order within
+    if store_names:
+        matched = [i for i in shopping if _store_matches(i.get("source", ""), store_names)]
+        unmatched = [i for i in shopping if not _store_matches(i.get("source", ""), store_names)]
+        shopping = matched + unmatched
 
     # Build store_prices — one per unique store, best match first
     seen_stores = set()
@@ -142,13 +170,17 @@ def _search_serpapi(product_name: str, start: int = 0) -> dict:
     return {"store_prices": store_prices, "images": images, "image_url": image_url}
 
 
-def search_images(product_name: str, start: int = 0) -> list[dict]:
+def search_images(
+    product_name: str, start: int = 0, store_names: list[str] | None = None,
+) -> list[dict]:
     """Search SerpAPI Google Shopping for product images."""
-    result = _search_serpapi(product_name, start=start)
+    result = _search_serpapi(product_name, start=start, store_names=store_names)
     return result["images"]
 
 
-async def suggest_product_info(product_name: str) -> dict:
+async def suggest_product_info(
+    product_name: str, store_names: list[str] | None = None,
+) -> dict:
     """Suggest category, price, stores, and images using Gemini + SerpAPI.
 
     Runs both sources in parallel. Returns merged dict with keys:
@@ -156,7 +188,7 @@ async def suggest_product_info(product_name: str) -> dict:
         store_prices, image_url, images (from SerpAPI).
     """
     gemini_task = asyncio.to_thread(_query_gemini, product_name)
-    serpapi_task = asyncio.to_thread(_search_serpapi, product_name)
+    serpapi_task = asyncio.to_thread(_search_serpapi, product_name, 0, store_names)
 
     gemini_result, serpapi_result = await asyncio.gather(
         gemini_task, serpapi_task, return_exceptions=True,
