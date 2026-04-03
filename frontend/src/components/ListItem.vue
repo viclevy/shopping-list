@@ -18,7 +18,8 @@
           <span v-if="item.unit" class="qty-unit">{{ item.unit }}</span>
         </span>
         <span class="item-by">{{ displayName(item.added_by) }}</span>
-        <span v-if="bestPrice !== null" class="item-price">${{ bestPrice.toFixed(2) }}</span>
+        <span v-if="displayStore.name" class="item-store">⭐ {{ displayStore.name }} <span v-if="displayStore.price" class="store-price">${{ displayStore.price.toFixed(2) }}</span></span>
+        <span v-else-if="bestPrice !== null" class="item-price">Best: ${{ bestPrice.toFixed(2) }}</span>
       </div>
     </div>
     <div class="item-actions">
@@ -55,6 +56,17 @@ const bestPrice = computed(() => {
   const withPrice = stores.filter(s => s.price != null)
   if (!withPrice.length) return null
   return Math.min(...withPrice.map(s => s.price))
+})
+
+const displayStore = computed(() => {
+  if (props.item.product.favorite_store_id && props.item.product.favorite_store) {
+    const favStore = props.item.product.stores?.find(s => s.store_id === props.item.product.favorite_store_id)
+    return {
+      name: props.item.product.favorite_store.name,
+      price: favStore?.price || null
+    }
+  }
+  return { name: null, price: null }
 })
 
 const displayQty = computed(() => {
@@ -198,6 +210,16 @@ async function decrement() {
   font-size: 13px;
   color: var(--primary);
   font-weight: 500;
+}
+
+.item-store {
+  font-size: 13px;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.store-price {
+  margin-left: 2px;
 }
 
 .item-actions {

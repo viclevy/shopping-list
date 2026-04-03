@@ -58,16 +58,38 @@
 
       <div class="section">
         <h3>Store Availability & Prices</h3>
-        <table v-if="product.stores?.length" class="store-table">
-          <thead><tr><th>Store</th><th>Price</th></tr></thead>
+        <button class="btn-secondary search-prices-btn" @click="showPriceSearch = !showPriceSearch">
+          {{ showPriceSearch ? 'Hide Price Search' : 'Search for Prices' }}
+        </button>
+        <p v-if="showPriceSearch && searchingPrices" class="searching-text">Searching for prices...</p>
+        <button v-if="showPriceSearch && !searchingPrices" class="btn-primary search-action-btn" @click="searchForPrices" :disabled="searchingPrices">
+          Search Now
+        </button>
+        <table v-if="allStores.length" class="store-table">
+          <thead><tr><th>Store</th><th>Price</th><th>Favorite</th></tr></thead>
           <tbody>
-            <tr v-for="ps in product.stores" :key="ps.store_id">
-              <td>{{ ps.store_name }}</td>
-              <td>{{ ps.price != null ? `$${ps.price.toFixed(2)}` : '—' }}</td>
+            <tr v-for="store in allStores" :key="store.id">
+              <td>{{ store.name }}</td>
+              <td>{{ getPriceForStore(store.id) != null ? `$${getPriceForStore(store.id).toFixed(2)}` : '—' }}</td>
+              <td><input
+                type="radio"
+                :value="store.id"
+                v-model.number="editFavoriteStoreId"
+                :aria-label="`Set ${store.name} as favorite`"
+              /></td>
+            </tr>
+            <tr>
+              <td colspan="2">None</td>
+              <td><input
+                type="radio"
+                :value="null"
+                v-model="editFavoriteStoreId"
+                aria-label="Clear favorite store"
+              /></td>
             </tr>
           </tbody>
         </table>
-        <p v-else class="no-data">No store info.</p>
+        <p v-else class="no-data">No stores available.</p>
       </div>
 
       <div class="section">
@@ -99,17 +121,22 @@ const route = useRoute()
 const router = useRouter()
 const product = ref(null)
 const showImageSearch = ref(false)
+const showPriceSearch = ref(false)
 const history = ref([])
 const editName = ref('')
 const editCategory = ref('')
+const editFavoriteStoreId = ref(null)
 const saving = ref(false)
+const searchingPrices = ref(false)
 const suggestingCategory = ref(false)
+const allStores = ref([])
 
 async function reload() {
   const res = await api.get(`/products/${route.params.id}`)
   product.value = res.data
   editName.value = product.value.name
   editCategory.value = product.value.category || ''
+  editFavoriteStoreId.value = product.value.favorite_store_id || null
 }
 
 async function suggestCategory() {
@@ -132,10 +159,46 @@ async function loadHistory() {
   history.value = res.data
 }
 
+async function loadAllStores() {
+  try {
+    const res = await api.get('/stores')
+    allStores.value = res.data
+  } catch {
+    // ignore failure
+  }
+}
+
+async function searchForPrices() {
+  if (!product.value) return
+  searchingPrices.value = true
+  try {
+    const res = await api.get('/search/suggest', { params: { q: product.value.name } })
+    const storePrices = res.data.store_prices || []
+    if (storePrices.length) {
+      await api.post(
+        `/products/${product.value.id}/store-prices`,
+        storePrices.map(sp => ({ store_name: sp.store, price: sp.price }))
+      )
+      await reload()
+    }
+  } catch {
+    // ignore search failures
+  } finally {
+    searchingPrices.value = false
+  }
+}
+
+function getPriceForStore(storeId) {
+  if (!product.value) return null
+  const ps = product.value.stores?.find(s => s.store_id === storeId)
+  return ps?.price || null
+}
+
 onMounted(async () => {
   await reload()
   await suggestCategory()
   await loadHistory()
+  await loadAllStores()
 })
 
 async function saveDetails() {
@@ -144,6 +207,7 @@ async function saveDetails() {
     await api.put(`/products/${product.value.id}`, {
       name: editName.value,
       category: normalizeCategory(editCategory.value) || null,
+      favorite_store_id: editFavoriteStoreId.value,
     })
     saving.value = 'done'
     setTimeout(() => router.back(), 400)
@@ -302,6 +366,24 @@ function formatDate(iso) {
 .find-images-btn {
   margin-top: 8px;
   font-size: 13px;
+}
+
+.search-prices-btn {
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.search-action-btn {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.searching-text {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin-bottom: 8px;
+  font-style: italic;
 }
 
 .store-table {

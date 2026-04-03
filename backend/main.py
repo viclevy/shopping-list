@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from auth import hash_password
 from config import settings
 from database import Base, SessionLocal, engine
-from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, User
+from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, StoreAlias, User
 from routers import (
     analytics_router,
     auth_router,
@@ -108,6 +108,8 @@ def startup():
         store_cols = [row[1] for row in conn.execute("PRAGMA table_info(stores)").fetchall()]
         if "include_in_image_search" not in store_cols:
             conn.execute("ALTER TABLE stores ADD COLUMN include_in_image_search BOOLEAN DEFAULT 1")
+        if "favorite_store_id" not in product_cols:
+            conn.execute("ALTER TABLE products ADD COLUMN favorite_store_id INTEGER REFERENCES stores(id) ON DELETE SET NULL")
         conn.commit()
         conn.close()
 

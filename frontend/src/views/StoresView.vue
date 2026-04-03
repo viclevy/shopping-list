@@ -13,7 +13,32 @@
     <div v-if="loading" class="loading">Loading...</div>
     <div v-else class="store-list">
       <div v-for="store in stores" :key="store.id" class="store-row card">
-        <span class="store-name">{{ store.name }}</span>
+        <div class="store-main">
+          <span class="store-name">{{ store.name }}</span>
+          <div v-if="store.aliases?.length" class="alias-list">
+            <span v-for="a in store.aliases" :key="a.id" class="alias-chip">
+              {{ a.alias }}
+              <button class="alias-remove" @click="removeAlias(store, a)" title="Remove alias">&times;</button>
+            </span>
+          </div>
+          <div v-if="addingAliasFor === store.id" class="alias-add-row">
+            <input
+              v-model="newAlias"
+              type="text"
+              placeholder="Alias name..."
+              class="alias-input"
+              @keydown.enter.prevent="saveAlias(store)"
+              @keydown.escape="addingAliasFor = null"
+              ref="aliasInput"
+            />
+            <button class="btn-primary btn-sm" @click="saveAlias(store)">Add</button>
+            <button class="btn-secondary btn-sm" @click="addingAliasFor = null">Cancel</button>
+          </div>
+          <div class="store-actions-row">
+            <button class="btn-secondary btn-sm" @click="startAddAlias(store)">+ Alias</button>
+            <button class="btn-secondary btn-sm" @click="startMerge(store)">Merge</button>
+          </div>
+        </div>
         <label class="toggle" :title="store.include_in_image_search ? 'Included in image search' : 'Excluded from image search'">
           <input
             type="checkbox"
@@ -30,11 +55,30 @@
         >Delete</button>
       </div>
     </div>
+
+    <!-- Merge dialog -->
+    <div v-if="mergeTarget" class="dialog-overlay" @click.self="mergeTarget = null">
+      <div class="dialog card">
+        <h3>Merge into "{{ mergeTarget.name }}"</h3>
+        <p class="merge-desc">Select a store to merge into "{{ mergeTarget.name }}". All product links, prices, and history will be moved. The merged store's name becomes an alias.</p>
+        <div class="merge-list">
+          <button
+            v-for="store in mergeOptions"
+            :key="store.id"
+            class="merge-option"
+            @click="doMerge(store)"
+          >{{ store.name }}</button>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn-secondary" @click="mergeTarget = null">Cancel</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import api from '../api.js'
 
 const stores = ref([])
@@ -42,6 +86,15 @@ const loading = ref(false)
 const adding = ref(false)
 const newName = ref('')
 const error = ref('')
+const addingAliasFor = ref(null)
+const newAlias = ref('')
+const mergeTarget = ref(null)
+const aliasInput = ref(null)
+
+const mergeOptions = computed(() => {
+  if (!mergeTarget.value) return []
+  return stores.value.filter(s => s.id !== mergeTarget.value.id)
+})
 
 async function loadStores() {
   loading.value = true
@@ -100,6 +153,57 @@ async function deleteStore(store) {
   }
 }
 
+function startAddAlias(store) {
+  addingAliasFor.value = store.id
+  newAlias.value = ''
+  nextTick(() => {
+    if (aliasInput.value) {
+      const input = Array.isArray(aliasInput.value) ? aliasInput.value[0] : aliasInput.value
+      input?.focus()
+    }
+  })
+}
+
+async function saveAlias(store) {
+  if (!newAlias.value.trim()) return
+  error.value = ''
+  try {
+    await api.post(`/stores/${store.id}/aliases`, { alias: newAlias.value.trim() })
+    addingAliasFor.value = null
+    newAlias.value = ''
+    await loadStores()
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Failed to add alias'
+  }
+}
+
+async function removeAlias(store, alias) {
+  if (!confirm(`Remove alias "${alias.alias}"?`)) return
+  error.value = ''
+  try {
+    await api.delete(`/stores/${store.id}/aliases/${alias.id}`)
+    await loadStores()
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Failed to remove alias'
+  }
+}
+
+function startMerge(store) {
+  mergeTarget.value = store
+}
+
+async function doMerge(otherStore) {
+  if (!confirm(`Merge "${otherStore.name}" into "${mergeTarget.value.name}"?\n\nAll product links, prices, and history from "${otherStore.name}" will be moved to "${mergeTarget.value.name}", and "${otherStore.name}" will be added as an alias.`)) return
+  error.value = ''
+  try {
+    await api.post(`/stores/${mergeTarget.value.id}/merge/${otherStore.id}`)
+    mergeTarget.value = null
+    await loadStores()
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Failed to merge stores'
+  }
+}
+
 onMounted(loadStores)
 
 function formatDate(iso) {
@@ -134,14 +238,70 @@ h2 { margin-bottom: 16px; }
   padding: 12px;
 }
 
+.store-main {
+  flex: 1;
+  min-width: 0;
+}
+
 .store-name {
   font-weight: 500;
+}
+
+.alias-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.alias-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  background: var(--border);
+  color: var(--text-secondary);
+}
+
+.alias-remove {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.alias-remove:hover {
+  color: var(--danger);
+}
+
+.alias-add-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.alias-input {
   flex: 1;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.store-actions-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
 }
 
 .store-date {
   font-size: 12px;
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .btn-sm {
@@ -197,5 +357,61 @@ h2 { margin-bottom: 16px; }
   text-align: center;
   padding: 32px;
   color: var(--text-secondary);
+}
+
+/* Merge dialog */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.dialog {
+  width: 90%;
+  max-width: 400px;
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.dialog h3 { margin-bottom: 8px; }
+
+.merge-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.merge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.merge-option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: var(--border);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.merge-option:hover {
+  background: #e0e0e0;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 </style>

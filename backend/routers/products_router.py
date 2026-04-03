@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from auth import get_current_user
 from database import get_db
-from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, User
+from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, StoreAlias, User
 from photo_utils import delete_photo, save_photo, save_photo_from_url
 from schemas import ProductCreate, ProductRead, ProductStoreRead, ProductUpdate, StorePriceByName
 
@@ -14,11 +14,14 @@ router = APIRouter()
 
 
 def _product_to_read(product: Product) -> ProductRead:
+    from schemas import StoreRead
     return ProductRead(
         id=product.id,
         name=product.name,
         category=product.category,
         image_url=product.image_url,
+        favorite_store_id=product.favorite_store_id,
+        favorite_store=StoreRead.model_validate(product.favorite_store) if product.favorite_store else None,
         photos=product.photos,
         stores=[
             ProductStoreRead(
@@ -40,9 +43,11 @@ def list_products(
     db: Session = Depends(get_db),
     _user: User = Depends(get_current_user),
 ):
+    from models import Store
     query = db.query(Product).options(
         joinedload(Product.photos),
         joinedload(Product.stores).joinedload(ProductStore.store),
+        joinedload(Product.favorite_store),
     )
     if q:
         query = query.filter(Product.name.ilike("%%%s%%" % q))
@@ -71,6 +76,7 @@ def get_product(
         .options(
             joinedload(Product.photos),
             joinedload(Product.stores).joinedload(ProductStore.store),
+            joinedload(Product.favorite_store),
         )
         .filter(Product.id == product_id)
         .first()
@@ -86,7 +92,12 @@ def create_product(
     db: Session = Depends(get_db),
     _user: User = Depends(get_current_user),
 ):
-    product = Product(name=body.name, category=body.category)
+    if body.favorite_store_id:
+        store = db.query(Store).filter(Store.id == body.favorite_store_id).first()
+        if not store:
+            raise HTTPException(status_code=400, detail="Favorite store not found")
+
+    product = Product(name=body.name, category=body.category, favorite_store_id=body.favorite_store_id)
     db.add(product)
     db.flush()
 
@@ -115,6 +126,12 @@ def update_product(
         product.name = body.name
     if body.category is not None:
         product.category = body.category
+    if body.favorite_store_id is not None:
+        if body.favorite_store_id:
+            store = db.query(Store).filter(Store.id == body.favorite_store_id).first()
+            if not store:
+                raise HTTPException(status_code=400, detail="Favorite store not found")
+        product.favorite_store_id = body.favorite_store_id
     product.updated_at = datetime.utcnow()
 
     if body.store_ids is not None:
@@ -253,6 +270,11 @@ def save_store_prices(
 
     for sp in prices:
         store = db.query(Store).filter(Store.name.ilike(sp.store_name)).first()
+        if not store:
+            # Check aliases
+            alias = db.query(StoreAlias).filter(StoreAlias.alias.ilike(sp.store_name)).first()
+            if alias:
+                store = db.query(Store).filter(Store.id == alias.store_id).first()
         if not store:
             continue
         existing = db.query(ProductStore).filter(

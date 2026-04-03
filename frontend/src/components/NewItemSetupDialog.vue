@@ -50,6 +50,28 @@
         </div>
       </div>
 
+      <div v-if="storePrices.length" class="field">
+        <label>Favorite Store</label>
+        <div class="store-radio-list">
+          <label v-for="sp in storePrices" :key="sp.store" class="radio-option">
+            <input
+              type="radio"
+              :value="sp.store"
+              v-model="selectedFavoriteStore"
+            />
+            <span>{{ sp.store }}</span>
+          </label>
+          <label class="radio-option">
+            <input
+              type="radio"
+              :value="null"
+              v-model="selectedFavoriteStore"
+            />
+            <span>None</span>
+          </label>
+        </div>
+      </div>
+
       <div v-else-if="suggestedPrice" class="field">
         <label>Typical Price</label>
         <div class="price-display">${{ suggestedPrice.toFixed(2) }}</div>
@@ -95,8 +117,10 @@ const suggestedStores = ref([])
 const storePrices = ref([])
 const images = ref([])
 const selectedImageUrl = ref(null)
+const selectedFavoriteStore = ref(null)
 const loading = ref(false)
 const saving = ref(false)
+const storeNameToId = ref({})
 
 watch(() => props.visible, async (val) => {
   if (val && props.product) {
@@ -106,6 +130,8 @@ watch(() => props.visible, async (val) => {
     storePrices.value = []
     images.value = []
     selectedImageUrl.value = null
+    selectedFavoriteStore.value = null
+    storeNameToId.value = {}
     loading.value = true
     try {
       const res = await api.get('/search/suggest', { params: { q: props.product.name } })
@@ -116,6 +142,17 @@ watch(() => props.visible, async (val) => {
       suggestedStores.value = res.data.stores || []
       storePrices.value = res.data.store_prices || []
       images.value = res.data.images || []
+
+      // Fetch stores to map names to IDs
+      try {
+        const storesRes = await api.get('/stores')
+        storeNameToId.value = {}
+        storesRes.data.forEach(store => {
+          storeNameToId.value[store.name] = store.id
+        })
+      } catch {
+        // ignore failure
+      }
     } catch {
       // ignore suggestion failures
     } finally {
@@ -137,9 +174,17 @@ async function save() {
   saving.value = true
   try {
     const newCategory = normalizeCategory(category.value) || null
-    if (newCategory !== (props.product.category || null)) {
-      await api.put(`/products/${props.product.id}`, { category: newCategory })
+    const favoriteStoreId = selectedFavoriteStore.value ? storeNameToId.value[selectedFavoriteStore.value] : null
+
+    const updates = { category: newCategory }
+    if (favoriteStoreId || selectedFavoriteStore.value === null) {
+      updates.favorite_store_id = favoriteStoreId
     }
+
+    if (newCategory !== (props.product.category || null) || favoriteStoreId !== (props.product.favorite_store_id || null)) {
+      await api.put(`/products/${props.product.id}`, updates)
+    }
+
     // If an image was selected but not yet saved (no productId at time of select)
     if (selectedImageUrl.value && props.product.id) {
       try {
@@ -289,6 +334,33 @@ async function save() {
   font-size: 12px;
   background: var(--border);
   color: var(--text);
+}
+
+.store-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.radio-option:hover {
+  background: #e0e0e0;
+}
+
+.radio-option input[type="radio"] {
+  cursor: pointer;
 }
 
 .loading-section {

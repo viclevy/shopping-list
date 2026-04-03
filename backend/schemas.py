@@ -64,10 +64,19 @@ class StoreCreate(BaseModel):
     include_in_image_search: bool = True
 
 
+class StoreAliasRead(BaseModel):
+    id: int
+    alias: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class StoreRead(BaseModel):
     id: int
     name: str
     include_in_image_search: bool
+    aliases: List[StoreAliasRead] = []
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -97,6 +106,7 @@ class ProductCreate(BaseModel):
     category: Optional[str] = None
     store_ids: Optional[List[int]] = None
     prices: Optional[Dict[int, Optional[float]]] = None  # store_id -> price
+    favorite_store_id: Optional[int] = None
 
     @field_validator("name")
     @classmethod
@@ -114,6 +124,7 @@ class ProductUpdate(BaseModel):
     category: Optional[str] = None
     store_ids: Optional[List[int]] = None
     prices: Optional[Dict[int, Optional[float]]] = None
+    favorite_store_id: Optional[int] = None
 
     @field_validator("name")
     @classmethod
@@ -131,6 +142,8 @@ class ProductRead(BaseModel):
     name: str
     category: Optional[str] = None
     image_url: Optional[str] = None
+    favorite_store_id: Optional[int] = None
+    favorite_store: Optional[StoreRead] = None
     photos: List[ProductPhotoRead] = []
     stores: List[ProductStoreRead] = []
     created_at: datetime

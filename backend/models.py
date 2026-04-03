@@ -33,6 +33,19 @@ class Store(Base):
     include_in_image_search = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    aliases = relationship("StoreAlias", back_populates="store", cascade="all, delete-orphan")
+
+
+class StoreAlias(Base):
+    __tablename__ = "store_aliases"
+
+    id = Column(Integer, primary_key=True)
+    store_id = Column(Integer, ForeignKey("stores.id", ondelete="CASCADE"), nullable=False)
+    alias = Column(String, unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    store = relationship("Store", back_populates="aliases")
+
 
 class Product(Base):
     __tablename__ = "products"
@@ -41,11 +54,13 @@ class Product(Base):
     name = Column(String, nullable=False, index=True)
     category = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
+    favorite_store_id = Column(Integer, ForeignKey("stores.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     photos = relationship("ProductPhoto", back_populates="product", cascade="all, delete-orphan")
     stores = relationship("ProductStore", back_populates="product", cascade="all, delete-orphan")
+    favorite_store = relationship("Store", foreign_keys=[favorite_store_id])
 
 
 class ProductStore(Base):

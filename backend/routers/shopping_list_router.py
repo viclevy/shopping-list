@@ -31,6 +31,7 @@ ws_manager = None
 
 
 def _item_to_read(item: ShoppingListItem, last_price_map: dict = None) -> ShoppingListItemRead:
+    from schemas import StoreRead
     product = item.product
     lp = (last_price_map or {}).get(product.id)
     return ShoppingListItemRead(
@@ -40,6 +41,8 @@ def _item_to_read(item: ShoppingListItem, last_price_map: dict = None) -> Shoppi
             name=product.name,
             category=product.category,
             image_url=product.image_url,
+            favorite_store_id=product.favorite_store_id,
+            favorite_store=StoreRead.model_validate(product.favorite_store) if product.favorite_store else None,
             photos=product.photos,
             stores=[
                 ProductStoreRead(
@@ -86,6 +89,8 @@ def _get_all_items(db: Session) -> List[ShoppingListItemRead]:
             joinedload(ShoppingListItem.product)
             .joinedload(Product.stores)
             .joinedload(ProductStore.store),
+            joinedload(ShoppingListItem.product)
+            .joinedload(Product.favorite_store),
             joinedload(ShoppingListItem.user),
         )
         .order_by(ShoppingListItem.added_at.desc())
@@ -202,6 +207,7 @@ async def add_item(
         .options(
             joinedload(ShoppingListItem.product).joinedload(Product.photos),
             joinedload(ShoppingListItem.product).joinedload(Product.stores).joinedload(ProductStore.store),
+            joinedload(ShoppingListItem.product).joinedload(Product.favorite_store),
             joinedload(ShoppingListItem.user),
         )
         .filter(ShoppingListItem.id == item.id)
@@ -247,6 +253,7 @@ async def edit_item(
         .options(
             joinedload(ShoppingListItem.product).joinedload(Product.photos),
             joinedload(ShoppingListItem.product).joinedload(Product.stores).joinedload(ProductStore.store),
+            joinedload(ShoppingListItem.product).joinedload(Product.favorite_store),
             joinedload(ShoppingListItem.user),
         )
         .filter(ShoppingListItem.id == item_id)
