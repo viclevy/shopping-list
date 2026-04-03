@@ -61,11 +61,13 @@ class PasswordUpdate(BaseModel):
 # --- Store ---
 class StoreCreate(BaseModel):
     name: str
+    include_in_image_search: bool = True
 
 
 class StoreRead(BaseModel):
     id: int
     name: str
+    include_in_image_search: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -105,6 +105,9 @@ def startup():
         photo_cols = [row[1] for row in conn.execute("PRAGMA table_info(product_photos)").fetchall()]
         if "is_primary" not in photo_cols:
             conn.execute("ALTER TABLE product_photos ADD COLUMN is_primary BOOLEAN DEFAULT 0")
+        store_cols = [row[1] for row in conn.execute("PRAGMA table_info(stores)").fetchall()]
+        if "include_in_image_search" not in store_cols:
+            conn.execute("ALTER TABLE stores ADD COLUMN include_in_image_search BOOLEAN DEFAULT 1")
         conn.commit()
         conn.close()
 

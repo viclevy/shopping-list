@@ -43,8 +43,27 @@ def create_store(
 ):
     if db.query(Store).filter(Store.name == body.name).first():
         raise HTTPException(status_code=409, detail="Store already exists")
-    store = Store(name=body.name)
+    store = Store(name=body.name, include_in_image_search=body.include_in_image_search)
     db.add(store)
+    db.commit()
+    db.refresh(store)
+    return store
+
+
+@router.patch("/{store_id}", response_model=StoreRead)
+def update_store(
+    store_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    store = db.query(Store).filter(Store.id == store_id).first()
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+
+    if "include_in_image_search" in body:
+        store.include_in_image_search = body["include_in_image_search"]
+
     db.commit()
     db.refresh(store)
     return store

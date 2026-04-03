@@ -14,6 +14,15 @@
     <div v-else class="store-list">
       <div v-for="store in stores" :key="store.id" class="store-row card">
         <span class="store-name">{{ store.name }}</span>
+        <label class="toggle" :title="store.include_in_image_search ? 'Included in image search' : 'Excluded from image search'">
+          <input
+            type="checkbox"
+            :checked="store.include_in_image_search"
+            @change="toggleImageSearch(store)"
+          />
+          <span class="toggle-slider"></span>
+          <span class="toggle-label">Search</span>
+        </label>
         <span class="store-date">Added {{ formatDate(store.created_at) }}</span>
         <button
           class="btn-danger btn-sm"
@@ -55,6 +64,17 @@ async function addStore() {
     error.value = e.response?.data?.detail || 'Failed to add store'
   } finally {
     adding.value = false
+  }
+}
+
+async function toggleImageSearch(store) {
+  try {
+    const { data } = await api.patch(`/stores/${store.id}`, {
+      include_in_image_search: !store.include_in_image_search,
+    })
+    store.include_in_image_search = data.include_in_image_search
+  } catch (e) {
+    error.value = e.response?.data?.detail || 'Failed to update store'
   }
 }
 
@@ -127,6 +147,50 @@ h2 { margin-bottom: 16px; }
 .btn-sm {
   padding: 4px 10px;
   font-size: 12px;
+}
+
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle input { display: none; }
+
+.toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background: #ccc;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: var(--primary);
+}
+
+.toggle input:checked + .toggle-slider::after {
+  transform: translateX(16px);
+}
+
+.toggle-label {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .loading {

@@ -12,8 +12,8 @@ router = APIRouter()
 
 
 def _get_store_names(db: Session) -> list[str]:
-    """Fetch all user store names from the database."""
-    return [s.name for s in db.query(Store.name).order_by(Store.name).all()]
+    """Fetch store names for image search (where include_in_image_search is True)."""
+    return [s.name for s in db.query(Store.name).filter(Store.include_in_image_search == True).order_by(Store.name).all()]
 
 
 @router.get("/suggest")

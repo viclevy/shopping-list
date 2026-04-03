@@ -30,6 +30,7 @@ class Store(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True, nullable=False)
+    include_in_image_search = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
