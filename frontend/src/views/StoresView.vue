@@ -1,16 +1,16 @@
 <template>
   <div class="stores-view">
-    <h2>Stores</h2>
+    <h2>{{ $t('stores.title') }}</h2>
 
     <div class="card add-form">
       <form @submit.prevent="addStore" class="form-row">
-        <input v-model="newName" type="text" placeholder="New store name..." required />
-        <button type="submit" class="btn-primary" :disabled="adding">Add Store</button>
+        <input v-model="newName" type="text" :placeholder="$t('stores.placeholder')" required />
+        <button type="submit" class="btn-primary" :disabled="adding">{{ $t('stores.addButton') }}</button>
       </form>
       <p v-if="error" class="error">{{ error }}</p>
     </div>
 
-    <div v-if="loading" class="loading">Loading...</div>
+    <div v-if="loading" class="loading">{{ $t('common.loading') }}</div>
     <div v-else class="store-list">
       <div v-for="store in stores" :key="store.id" class="store-row card">
         <div class="store-main">
@@ -25,21 +25,21 @@
             <input
               v-model="newAlias"
               type="text"
-              placeholder="Alias name..."
+              :placeholder="$t('stores.aliasName')"
               class="alias-input"
               @keydown.enter.prevent="saveAlias(store)"
               @keydown.escape="addingAliasFor = null"
               ref="aliasInput"
             />
-            <button class="btn-primary btn-sm" @click="saveAlias(store)">Add</button>
-            <button class="btn-secondary btn-sm" @click="addingAliasFor = null">Cancel</button>
+            <button class="btn-primary btn-sm" @click="saveAlias(store)">{{ $t('stores.addAlias') }}</button>
+            <button class="btn-secondary btn-sm" @click="addingAliasFor = null">{{ $t('common.cancel') }}</button>
           </div>
           <div class="store-actions-row">
             <button class="btn-secondary btn-sm" @click="startAddAlias(store)">+ Alias</button>
             <button class="btn-secondary btn-sm" @click="startMerge(store)">Merge</button>
           </div>
         </div>
-        <label class="toggle" :title="store.include_in_image_search ? 'Included in image search' : 'Excluded from image search'">
+        <label class="toggle" :title="store.include_in_image_search ? $t('stores.searchIncluded') : $t('stores.searchExcluded')">
           <input
             type="checkbox"
             :checked="store.include_in_image_search"
@@ -48,19 +48,19 @@
           <span class="toggle-slider"></span>
           <span class="toggle-label">Search</span>
         </label>
-        <span class="store-date">Added {{ formatDate(store.created_at) }}</span>
+        <span class="store-date">{{ $t('stores.added') }} {{ formatDate(store.created_at) }}</span>
         <button
           class="btn-danger btn-sm"
           @click="deleteStore(store)"
-        >Delete</button>
+        >{{ $t('common.delete') }}</button>
       </div>
     </div>
 
     <!-- Merge dialog -->
     <div v-if="mergeTarget" class="dialog-overlay" @click.self="mergeTarget = null">
       <div class="dialog card">
-        <h3>Merge into "{{ mergeTarget.name }}"</h3>
-        <p class="merge-desc">Select a store to merge into "{{ mergeTarget.name }}". All product links, prices, and history will be moved. The merged store's name becomes an alias.</p>
+        <h3>{{ $t('stores.mergeTitle') }}</h3>
+        <p class="merge-desc">{{ $t('stores.mergeDesc') }} {{ $t('stores.allProductLinksWillBeMoved') }}</p>
         <div class="merge-list">
           <button
             v-for="store in mergeOptions"
@@ -70,7 +70,7 @@
           >{{ store.name }}</button>
         </div>
         <div class="dialog-actions">
-          <button class="btn-secondary" @click="mergeTarget = null">Cancel</button>
+          <button class="btn-secondary" @click="mergeTarget = null">{{ $t('common.cancel') }}</button>
         </div>
       </div>
     </div>
@@ -79,7 +79,10 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../api.js'
+
+const { t } = useI18n()
 
 const stores = ref([])
 const loading = ref(false)
@@ -136,14 +139,14 @@ async function deleteStore(store) {
     const { data: preview } = await api.get(`/stores/${store.id}/delete-preview`)
     const warnings = []
     if (preview.history_events > 0) {
-      warnings.push(`${preview.history_events} history event${preview.history_events === 1 ? '' : 's'}`)
+      warnings.push(`${preview.history_events} ${t(preview.history_events === 1 ? 'stores.historyEventSingular' : 'stores.historyEventPlural')}`)
     }
     if (preview.product_links > 0) {
-      warnings.push(`${preview.product_links} product-store link${preview.product_links === 1 ? '' : 's'}`)
+      warnings.push(`${preview.product_links} ${t(preview.product_links === 1 ? 'stores.productLinkSingular' : 'stores.productLinkPlural')}`)
     }
-    let msg = `Delete store "${store.name}"?`
+    let msg = t('stores.confirmDelete', { name: store.name })
     if (warnings.length > 0) {
-      msg += `\n\nThis will permanently delete:\n- ${warnings.join('\n- ')}`
+      msg += `\n\n${t('stores.willPermanentlyDelete')}\n- ${warnings.join('\n- ')}`
     }
     if (!confirm(msg)) return
     await api.delete(`/stores/${store.id}`)
@@ -178,7 +181,7 @@ async function saveAlias(store) {
 }
 
 async function removeAlias(store, alias) {
-  if (!confirm(`Remove alias "${alias.alias}"?`)) return
+  if (!confirm(t('stores.confirmRemoveAlias', { alias: alias.alias }))) return
   error.value = ''
   try {
     await api.delete(`/stores/${store.id}/aliases/${alias.id}`)
@@ -193,7 +196,7 @@ function startMerge(store) {
 }
 
 async function doMerge(otherStore) {
-  if (!confirm(`Merge "${otherStore.name}" into "${mergeTarget.value.name}"?\n\nAll product links, prices, and history from "${otherStore.name}" will be moved to "${mergeTarget.value.name}", and "${otherStore.name}" will be added as an alias.`)) return
+  if (!confirm(t('stores.confirmMerge', { sourceStore: otherStore.name, targetStore: mergeTarget.value.name }))) return
   error.value = ''
   try {
     await api.post(`/stores/${mergeTarget.value.id}/merge/${otherStore.id}`)

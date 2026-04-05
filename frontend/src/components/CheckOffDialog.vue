@@ -1,9 +1,9 @@
 <template>
   <div v-if="visible" class="dialog-overlay" @click.self="$emit('close')">
     <div class="dialog card">
-      <h3>Check off: {{ item.product.name }}</h3>
+      <h3>{{ $t('shoppingList.markAsBought') }}: {{ item.product.name }}</h3>
       <div class="field">
-        <label>Store</label>
+        <label>{{ $t('productDetail.store') }}</label>
         <div class="store-chips">
           <button
             v-for="store in stores"
@@ -15,7 +15,7 @@
         </div>
       </div>
       <div class="field">
-        <label>Price</label>
+        <label>{{ $t('productDetail.price') }}</label>
         <input
           ref="priceInput"
           :value="priceDisplay"
@@ -27,8 +27,8 @@
         />
       </div>
       <div class="dialog-actions">
-        <button class="btn-secondary" @click="$emit('close')">Cancel</button>
-        <button class="btn-primary" @click="confirm">Confirm</button>
+        <button class="btn-secondary" @click="$emit('close')">{{ $t('common.cancel') }}</button>
+        <button class="btn-primary" @click="confirm">{{ $t('common.confirm') }}</button>
       </div>
     </div>
   </div>
@@ -36,8 +36,11 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useSessionStore } from '../stores/session.js'
 import api from '../api.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: Boolean,

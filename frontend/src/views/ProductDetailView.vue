@@ -8,45 +8,45 @@
       </div>
 
       <div class="section">
-        <h3>Details</h3>
+        <h3>{{ $t('productDetail.details') }}</h3>
         <div class="edit-fields">
           <div class="field">
-            <label>Name</label>
+            <label>{{ $t('productDetail.name') }}</label>
             <input v-model="editName" type="text" />
           </div>
           <div class="field">
-            <label>Category</label>
-            <input v-model="editCategory" type="text" placeholder="e.g. Dairy, Produce..." :class="{ suggesting: suggestingCategory }" />
-            <span v-if="suggestingCategory" class="suggest-hint">Suggesting...</span>
+            <label>{{ $t('productDetail.category') }}</label>
+            <input v-model="editCategory" type="text" :placeholder="$t('productDetail.categoryPlaceholder')" :class="{ suggesting: suggestingCategory }" />
+            <span v-if="suggestingCategory" class="suggest-hint">{{ $t('productDetail.suggesting') }}</span>
           </div>
           <button class="btn-primary" @click="saveDetails" :disabled="saving">
-            {{ saving === 'done' ? 'Saved!' : 'Save' }}
+            {{ saving === 'done' ? $t('productDetail.saved') : $t('common.save') }}
           </button>
         </div>
       </div>
 
       <div class="section">
-        <h3>Photos</h3>
+        <h3>{{ $t('productDetail.photos') }}</h3>
         <div v-if="product.photos?.length" class="photo-gallery">
           <div v-for="photo in product.photos" :key="photo.id" class="photo-wrap">
             <img :src="`/uploads/${photo.filename}`" class="photo-img" />
             <button
               class="photo-primary"
               :class="{ active: photo.is_primary }"
-              title="Set as primary"
+              :title="$t('productDetail.setAsPrimary')"
               @click="setPrimary(photo.id)"
             >&#9733;</button>
             <button class="photo-delete" @click="deletePhoto(photo.id)">&times;</button>
           </div>
         </div>
-        <p v-else class="no-data">No photos yet.</p>
+        <p v-else class="no-data">{{ $t('productDetail.noPhotos') }}</p>
         <PhotoPicker
           :product-id="product.id"
           :product-name="product.name"
           @photo-added="reload"
         />
         <button class="btn-secondary find-images-btn" @click="showImageSearch = !showImageSearch">
-          {{ showImageSearch ? 'Hide Image Search' : 'Find Images Online' }}
+          {{ showImageSearch ? $t('productDetail.hideImageSearch') : $t('productDetail.findImagesOnline') }}
         </button>
         <ImageSearchPicker
           v-if="showImageSearch"
@@ -57,16 +57,16 @@
       </div>
 
       <div class="section">
-        <h3>Store Availability & Prices</h3>
+        <h3>{{ $t('productDetail.storeAvailability') }}</h3>
         <button class="btn-secondary search-prices-btn" @click="showPriceSearch = !showPriceSearch">
-          {{ showPriceSearch ? 'Hide Price Search' : 'Search for Prices' }}
+          {{ showPriceSearch ? $t('productDetail.hidePriceSearch') : $t('productDetail.searchForPrices') }}
         </button>
-        <p v-if="showPriceSearch && searchingPrices" class="searching-text">Searching for prices...</p>
+        <p v-if="showPriceSearch && searchingPrices" class="searching-text">{{ $t('productDetail.searchingForPrices') }}</p>
         <button v-if="showPriceSearch && !searchingPrices" class="btn-primary search-action-btn" @click="searchForPrices" :disabled="searchingPrices">
-          Search Now
+          {{ $t('productDetail.searchNow') }}
         </button>
         <table v-if="allStores.length" class="store-table">
-          <thead><tr><th>Store</th><th>Price</th><th>Favorite</th></tr></thead>
+          <thead><tr><th>{{ $t('productDetail.store') }}</th><th>{{ $t('productDetail.price') }}</th><th>{{ $t('productDetail.favorite') }}</th></tr></thead>
           <tbody>
             <tr v-for="store in allStores" :key="store.id">
               <td>{{ store.name }}</td>
@@ -75,25 +75,25 @@
                 type="radio"
                 :value="store.id"
                 v-model.number="editFavoriteStoreId"
-                :aria-label="`Set ${store.name} as favorite`"
+                :aria-label="$t('productDetail.setAsFavoriteTo', { store: store.name })"
               /></td>
             </tr>
             <tr>
-              <td colspan="2">None</td>
+              <td colspan="2">{{ $t('productDetail.noStore') }}</td>
               <td><input
                 type="radio"
                 :value="null"
                 v-model="editFavoriteStoreId"
-                aria-label="Clear favorite store"
+                :aria-label="$t('productDetail.clearFavorite')"
               /></td>
             </tr>
           </tbody>
         </table>
-        <p v-else class="no-data">No stores available.</p>
+        <p v-else class="no-data">{{ $t('productDetail.noStores') }}</p>
       </div>
 
       <div class="section">
-        <h3>Purchase History</h3>
+        <h3>{{ $t('history.title') }}</h3>
         <div v-if="history.length" class="history-list">
           <div v-for="event in history" :key="event.id" class="history-row">
             <span class="history-date">{{ formatDate(event.timestamp) }}</span>
@@ -102,20 +102,23 @@
             <span v-if="event.price" class="history-price">${{ event.price.toFixed(2) }}</span>
           </div>
         </div>
-        <p v-else class="no-data">No history yet.</p>
+        <p v-else class="no-data">{{ $t('productDetail.noHistory') }}</p>
       </div>
     </div>
   </div>
-  <div v-else class="loading">Loading...</div>
+  <div v-else class="loading">{{ $t('common.loading') }}</div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api.js'
 import { normalizeCategory, displayName } from '../utils.js'
 import PhotoPicker from '../components/PhotoPicker.vue'
 import ImageSearchPicker from '../components/ImageSearchPicker.vue'
+
+const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
@@ -217,7 +220,7 @@ async function saveDetails() {
 }
 
 async function deletePhoto(photoId) {
-  if (!confirm('Delete this photo?')) return
+  if (!confirm(t('productDetail.confirmDeletePhoto'))) return
   await api.delete(`/products/${product.value.id}/photos/${photoId}`)
   await reload()
 }

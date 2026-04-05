@@ -1,18 +1,18 @@
 <template>
   <div class="history-view">
-    <h2>History</h2>
+    <h2>{{ $t('history.title') }}</h2>
     <div class="filters">
       <select v-model="filterAction">
-        <option value="">All actions</option>
-        <option value="added">Added</option>
-        <option value="modified">Modified</option>
-        <option value="checked_off">Checked off</option>
-        <option value="removed">Removed</option>
+        <option value="">{{ $t('history.allActions') }}</option>
+        <option value="added">{{ $t('history.actionAdded') }}</option>
+        <option value="modified">{{ $t('history.actionModified') }}</option>
+        <option value="checked_off">{{ $t('shoppingList.bought') }}</option>
+        <option value="removed">{{ $t('history.actionRemoved') }}</option>
       </select>
-      <button class="btn-primary" @click="loadHistory">Refresh</button>
+      <button class="btn-primary" @click="loadHistory">{{ $t('common.refresh') }}</button>
     </div>
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else-if="!events.length" class="empty">No history events found.</div>
+    <div v-if="loading" class="loading">{{ $t('common.loading') }}</div>
+    <div v-else-if="!events.length" class="empty">{{ $t('history.noEvents') }}</div>
     <div v-else class="event-list">
       <div v-for="event in events" :key="event.id" class="event-row card">
         <div class="event-main">
@@ -35,15 +35,18 @@
       </div>
     </div>
     <button v-if="events.length >= limit" class="btn-secondary load-more" @click="loadMore">
-      Load more
+      {{ $t('common.loadMore') }}
     </button>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../api.js'
 import { displayName } from '../utils.js'
+
+const { t } = useI18n()
 
 const events = ref([])
 const loading = ref(false)
@@ -74,7 +77,7 @@ async function loadMore() {
 }
 
 async function deleteEvent(id) {
-  if (!confirm('Delete this history event?')) return
+  if (!confirm(t('history.confirmDelete'))) return
   await api.delete(`/history/${id}`)
   events.value = events.value.filter(e => e.id !== id)
 }

@@ -4,7 +4,7 @@
       class="voice-btn"
       :class="{ listening: isListening }"
       @click="toggleListening"
-      :title="isListening ? 'Listening...' : 'Voice command'"
+      :title="isListening ? $t('voice.listening') : $t('voice.voiceCommand')"
     >
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
         <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/>
@@ -16,8 +16,10 @@
 </template>
 
 <script setup>
+import { useI18n } from 'vue-i18n'
 import { useVoice } from '../composables/useVoice.js'
 
+const { t } = useI18n()
 const { isListening, transcript, toggleListening } = useVoice()
 </script>
 

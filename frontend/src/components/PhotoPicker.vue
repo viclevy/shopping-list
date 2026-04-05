@@ -1,8 +1,8 @@
 <template>
   <div class="photo-picker">
     <div class="picker-tabs">
-      <button :class="{ active: tab === 'camera' }" @click="tab = 'camera'">Camera</button>
-      <button :class="{ active: tab === 'upload' }" @click="tab = 'upload'">Upload</button>
+      <button :class="{ active: tab === 'camera' }" @click="tab = 'camera'">{{ $t('photoPickerTab.camera') }}</button>
+      <button :class="{ active: tab === 'upload' }" @click="tab = 'upload'">{{ $t('photoPickerTab.upload') }}</button>
     </div>
 
     <div v-if="tab === 'camera'" class="picker-content">
@@ -17,7 +17,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../api.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   productId: { type: Number, required: true },
@@ -37,7 +40,7 @@ async function handleFile(event) {
     await api.post(`/products/${props.productId}/photos`, formData)
     emit('photo-added')
   } catch {
-    alert('Failed to upload photo')
+    alert(t('errors.addFailed'))
   }
 }
 </script>

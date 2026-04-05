@@ -1,15 +1,15 @@
 <template>
   <div v-if="visible" class="dialog-overlay" @click.self="$emit('close')">
     <div class="dialog card">
-      <h3>Set up: {{ product?.name }}</h3>
+      <h3>{{ $t('newItemSetup.title') }}: {{ product?.name }}</h3>
 
       <div v-if="loading" class="loading-section">
         <div class="spinner"></div>
-        <div class="loading-text">Looking up product info...</div>
+        <div class="loading-text">{{ $t('newItemSetup.lookingUpProductInfo') }}</div>
       </div>
 
       <div v-if="images.length || !loading" class="field">
-        <label>Product Image</label>
+        <label>{{ $t('newItemSetup.productImage') }}</label>
         <ImageSearchPicker
           :product-id="product?.id"
           :query="product?.name || ''"
@@ -20,8 +20,8 @@
       </div>
 
       <div class="field">
-        <label>Category</label>
-        <input v-model="category" type="text" placeholder="e.g. Dairy, Produce..." />
+        <label>{{ $t('newItemSetup.selectCategory') }}</label>
+        <input v-model="category" type="text" :placeholder="$t('productDetail.categoryPlaceholder')" />
         <div class="category-chips">
           <button
             v-for="cat in categories"
@@ -33,7 +33,7 @@
       </div>
 
       <div v-if="storePrices.length" class="field">
-        <label>Store Prices</label>
+        <label>{{ $t('newItemSetup.stores') }}</label>
         <div class="store-price-list">
           <a
             v-for="sp in storePrices"
@@ -51,7 +51,7 @@
       </div>
 
       <div v-if="storePrices.length" class="field">
-        <label>Favorite Store</label>
+        <label>{{ $t('productDetail.favorite') }}</label>
         <div class="store-radio-list">
           <label v-for="sp in storePrices" :key="sp.store" class="radio-option">
             <input
@@ -67,26 +67,26 @@
               :value="null"
               v-model="selectedFavoriteStore"
             />
-            <span>None</span>
+            <span>{{ $t('productDetail.noStore') }}</span>
           </label>
         </div>
       </div>
 
       <div v-else-if="suggestedPrice" class="field">
-        <label>Typical Price</label>
+        <label>{{ $t('newItemSetup.price') }}</label>
         <div class="price-display">${{ suggestedPrice.toFixed(2) }}</div>
       </div>
 
       <div v-if="suggestedStores.length" class="field">
-        <label>Available at</label>
+        <label>{{ $t('newItemSetup.availableAt') }}</label>
         <div class="store-chips">
           <span v-for="store in suggestedStores" :key="store" class="store-chip">{{ store }}</span>
         </div>
       </div>
 
       <div class="dialog-actions">
-        <button class="btn-secondary" @click="$emit('close')">Skip</button>
-        <button class="btn-primary" @click="save" :disabled="saving">Save</button>
+        <button class="btn-secondary" @click="$emit('close')">{{ $t('common.skip') }}</button>
+        <button class="btn-primary" @click="save" :disabled="saving">{{ $t('common.save') }}</button>
       </div>
     </div>
   </div>
@@ -94,9 +94,12 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../api.js'
 import { normalizeCategory } from '../utils.js'
 import ImageSearchPicker from './ImageSearchPicker.vue'
+
+const { t, global: $i18n } = useI18n()
 
 const props = defineProps({
   visible: Boolean,
@@ -209,7 +212,7 @@ async function save() {
     }
     emit('saved')
   } catch {
-    alert('Failed to save. Please try again.')
+    alert($i18n.global.t('errors.saveFailed') + '. Please try again.')
   } finally {
     saving.value = false
   }

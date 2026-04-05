@@ -1,10 +1,10 @@
 <template>
   <div class="shopping-list-view">
     <AddItemBar @new-product="openSetupDialog" />
-    <div v-if="list.loading && !list.items.length" class="loading">Loading...</div>
+    <div v-if="list.loading && !list.items.length" class="loading">{{ $t('common.loading') }}</div>
     <div v-else-if="!list.items.length" class="empty">
-      <p>Your shopping list is empty.</p>
-      <p class="empty-hint">Add items using the input above or the voice button.</p>
+      <p>{{ $t('shoppingList.empty') }}</p>
+      <p class="empty-hint">{{ $t('shoppingList.emptyHint') }}</p>
     </div>
     <div v-else class="list">
       <div v-for="group in groupedItems" :key="group.category" class="category-group">
@@ -36,12 +36,15 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import AddItemBar from '../components/AddItemBar.vue'
 import ListItem from '../components/ListItem.vue'
 import BoughtBeforeSection from '../components/BoughtBeforeSection.vue'
 import CheckOffDialog from '../components/CheckOffDialog.vue'
 import NewItemSetupDialog from '../components/NewItemSetupDialog.vue'
+
+const { t } = useI18n()
 
 const list = useShoppingListStore()
 
@@ -91,7 +94,7 @@ async function handleCheckOff(data) {
 }
 
 async function handleRemove(item) {
-  if (confirm(`Remove "${item.product.name}" from the list?`)) {
+  if (confirm(t('common.confirmRemoveItem', { name: item.product.name }))) {
     await list.removeItem(item.id)
   }
 }

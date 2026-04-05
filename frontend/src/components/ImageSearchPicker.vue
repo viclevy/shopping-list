@@ -4,11 +4,11 @@
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="Search for images..."
+        :placeholder="$t('imageSearch.title')"
         @keydown.enter.prevent="doSearch"
       />
       <button class="btn-secondary" @click="doSearch" :disabled="searching">
-        {{ searching ? 'Searching...' : 'Search' }}
+        {{ searching ? $t('newItemSetup.searching') : $t('common.search') }}
       </button>
     </div>
 
@@ -26,19 +26,22 @@
 
     <div v-if="images.length && hasMore" class="load-more-wrap">
       <button class="btn-secondary load-more-btn" @click="loadMore" :disabled="loadingMore">
-        {{ loadingMore ? 'Loading...' : 'Load More Images' }}
+        {{ loadingMore ? $t('common.loading') : $t('imageSearch.loadMore') }}
       </button>
     </div>
 
     <div v-else-if="searched && !searching" class="no-results">
-      No images found
+      {{ $t('imageSearch.noResults') }}
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../api.js'
+
+const { t } = useI18n()
 
 const props = defineProps({
   productId: { type: Number, default: null },
@@ -127,7 +130,7 @@ async function selectImage(img) {
       })
       emit('saved')
     } catch {
-      alert('Failed to save image')
+      alert(t('errors.addFailed'))
     } finally {
       savingUrl.value = null
     }

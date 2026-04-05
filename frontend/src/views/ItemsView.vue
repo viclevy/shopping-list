@@ -1,18 +1,18 @@
 <template>
   <div class="items-view">
-    <h2>Items</h2>
+    <h2>{{ $t('items.title') }}</h2>
 
     <div class="search-bar card">
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="Search items..."
+        :placeholder="$t('items.placeholder')"
         @input="onSearch"
       />
     </div>
 
-    <div v-if="loading" class="loading">Loading...</div>
-    <div v-else-if="!products.length" class="empty">No items found.</div>
+    <div v-if="loading" class="loading">{{ $t('common.loading') }}</div>
+    <div v-else-if="!products.length" class="empty">{{ $t('items.noItems') }}</div>
     <div v-else class="item-list">
       <div v-for="product in products" :key="product.id" class="product-row card">
         <div class="product-left" @click="$router.push(`/product/${product.id}`)">
@@ -27,7 +27,7 @@
         <button
           class="btn-danger btn-sm"
           @click="deleteProduct(product)"
-        >Delete</button>
+        >{{ $t('common.delete') }}</button>
       </div>
     </div>
 
@@ -37,7 +37,10 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '../api.js'
+
+const { t } = useI18n()
 
 const products = ref([])
 const loading = ref(false)
@@ -54,7 +57,7 @@ async function loadProducts(query) {
     const res = await api.get('/products', { params })
     products.value = res.data
   } catch {
-    error.value = 'Failed to load items'
+    error.value = t('errors.loadFailed')
   } finally {
     loading.value = false
   }
@@ -80,23 +83,23 @@ async function deleteProduct(product) {
     const { data: preview } = await api.get(`/products/${product.id}/delete-preview`)
     const warnings = []
     if (preview.history_events > 0) {
-      warnings.push(`${preview.history_events} history event${preview.history_events === 1 ? '' : 's'}`)
+      warnings.push(`${preview.history_events} ${t(preview.history_events === 1 ? 'items.historyEventSingular' : 'items.historyEventPlural')}`)
     }
     if (preview.list_items > 0) {
-      warnings.push(`${preview.list_items} shopping list entry${preview.list_items === 1 ? '' : 'ies'}`)
+      warnings.push(`${preview.list_items} ${t(preview.list_items === 1 ? 'items.listItemSingular' : 'items.listItemPlural')}`)
     }
     if (preview.photos > 0) {
-      warnings.push(`${preview.photos} photo${preview.photos === 1 ? '' : 's'}`)
+      warnings.push(`${preview.photos} ${t(preview.photos === 1 ? 'items.photoSingular' : 'items.photoPlural')}`)
     }
-    let msg = `Delete "${product.name}"?`
+    let msg = t('items.confirmDelete', { name: product.name })
     if (warnings.length > 0) {
-      msg += `\n\nThis will permanently remove:\n- ${warnings.join('\n- ')}`
+      msg += `\n\n${t('items.willPermanentlyRemove')}\n- ${warnings.join('\n- ')}`
     }
     if (!confirm(msg)) return
     await api.delete(`/products/${product.id}`)
     products.value = products.value.filter(p => p.id !== product.id)
   } catch (e) {
-    error.value = e.response?.data?.detail || 'Failed to delete item'
+    error.value = e.response?.data?.detail || t('errors.deleteFailed')
   }
 }
 

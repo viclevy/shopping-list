@@ -1,7 +1,7 @@
 <template>
   <div v-if="list.boughtBefore.length" class="bought-before">
     <div class="section-header" @click="expanded = !expanded">
-      <span class="section-title">Buy Again ({{ list.boughtBefore.length }})</span>
+      <span class="section-title">{{ $t('shoppingList.boughtBefore') }} ({{ list.boughtBefore.length }})</span>
       <span class="toggle">{{ expanded ? '▾' : '▸' }}</span>
     </div>
     <div v-if="expanded" class="bought-list">
@@ -18,11 +18,11 @@
         <div v-else class="bought-thumb-placeholder">?</div>
         <div class="bought-info">
           <span class="bought-name">{{ item.product_name }}</span>
-          <span class="bought-meta">Bought {{ item.purchase_count }}x</span>
+          <span class="bought-meta">{{ $t('shoppingList.boughtTimes', { count: item.purchase_count }) }}</span>
         </div>
         <button
           class="btn-readd"
-          title="Add to list"
+          :title="$t('shoppingList.addToList')"
           :disabled="adding === item.product_id"
           @click="readd(item)"
         >+</button>
@@ -33,8 +33,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 
+const { t } = useI18n()
 const list = useShoppingListStore()
 const expanded = ref(true)
 const adding = ref(null)

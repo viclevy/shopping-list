@@ -8,12 +8,27 @@
 </template>
 
 <script setup>
-import { watch } from 'vue'
+import { watch, onMounted } from 'vue'
 import { useAuthStore } from './stores/auth.js'
 import { connectWebSocket, disconnectWebSocket } from './websocket.js'
 import AppHeader from './components/AppHeader.vue'
+import { useI18n } from 'vue-i18n'
 
 const auth = useAuthStore()
+const { locale } = useI18n()
+
+onMounted(() => {
+  // Apply RTL for Hebrew and other RTL languages
+  const dir = locale.value === 'he' ? 'rtl' : 'ltr'
+  document.documentElement.dir = dir
+  document.documentElement.lang = locale.value
+})
+
+watch(() => locale.value, (newLocale) => {
+  const dir = newLocale === 'he' ? 'rtl' : 'ltr'
+  document.documentElement.dir = dir
+  document.documentElement.lang = newLocale
+})
 
 watch(() => auth.isLoggedIn, (loggedIn) => {
   if (loggedIn) connectWebSocket()
@@ -43,10 +58,20 @@ watch(() => auth.isLoggedIn, (loggedIn) => {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Droid Sans Hebrew', sans-serif;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+}
+
+html[dir="rtl"] {
+  direction: rtl;
+  text-align: right;
+}
+
+html[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
 }
 
 #app-root {

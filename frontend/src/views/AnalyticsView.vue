@@ -1,52 +1,52 @@
 <template>
   <div class="analytics-view">
-    <h2>Analytics</h2>
+    <h2>{{ $t('analytics.title') }}</h2>
 
     <div class="period-selector">
-      <button :class="{ active: period === 'week' }" @click="period = 'week'">Week</button>
-      <button :class="{ active: period === 'month' }" @click="period = 'month'">Month</button>
-      <button :class="{ active: period === 'year' }" @click="period = 'year'">Year</button>
+      <button :class="{ active: period === 'week' }" @click="period = 'week'">{{ $t('analytics.week') }}</button>
+      <button :class="{ active: period === 'month' }" @click="period = 'month'">{{ $t('analytics.month') }}</button>
+      <button :class="{ active: period === 'year' }" @click="period = 'year'">{{ $t('analytics.year') }}</button>
     </div>
 
     <div class="charts-grid">
       <div class="card chart-card">
-        <h3>Spending Over Time</h3>
+        <h3>{{ $t('analytics.spendingOverTime') }}</h3>
         <Bar v-if="spendingData" :data="spendingData" :options="chartOptions" />
-        <p v-else class="no-data">No spending data yet.</p>
+        <p v-else class="no-data">{{ $t('analytics.noSpendingData') }}</p>
       </div>
 
       <div class="card chart-card">
-        <h3>By Store</h3>
+        <h3>{{ $t('analytics.byStore') }}</h3>
         <Pie v-if="storeData" :data="storeData" :options="pieOptions" />
-        <p v-else class="no-data">No store data yet.</p>
+        <p v-else class="no-data">{{ $t('analytics.noStoreData') }}</p>
       </div>
 
       <div class="card chart-card">
-        <h3>By Category</h3>
+        <h3>{{ $t('analytics.byCategory') }}</h3>
         <Pie v-if="categoryData" :data="categoryData" :options="pieOptions" />
-        <p v-else class="no-data">No category data yet.</p>
+        <p v-else class="no-data">{{ $t('analytics.noCategoryData') }}</p>
       </div>
 
       <div class="card chart-card">
-        <h3>Family Contributions</h3>
+        <h3>{{ $t('analytics.familyContributions') }}</h3>
         <Bar v-if="contributionData" :data="contributionData" :options="chartOptions" />
-        <p v-else class="no-data">No contribution data yet.</p>
+        <p v-else class="no-data">{{ $t('analytics.noContributionData') }}</p>
       </div>
 
       <div class="card chart-card full-width">
-        <h3>Most Purchased Items</h3>
+        <h3>{{ $t('analytics.topItems') }}</h3>
         <div v-if="frequentItems.length" class="freq-table">
           <div v-for="item in frequentItems" :key="item.product_id" class="freq-row">
             <router-link :to="`/product/${item.product_id}`" class="freq-name">
               {{ item.product_name }}
             </router-link>
-            <span class="freq-count">{{ item.count }} times</span>
+            <span class="freq-count">{{ item.count }} {{ $t('analytics.times') }}</span>
             <span v-if="item.last_purchased" class="freq-date">
-              last: {{ formatDate(item.last_purchased) }}
+              {{ $t('analytics.lastPurchased') }}: {{ formatDate(item.last_purchased) }}
             </span>
           </div>
         </div>
-        <p v-else class="no-data">No purchase data yet.</p>
+        <p v-else class="no-data">{{ $t('analytics.noPurchaseData') }}</p>
       </div>
     </div>
   </div>
@@ -54,6 +54,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Bar, Pie } from 'vue-chartjs'
 import {
   Chart as ChartJS,
@@ -64,6 +65,8 @@ import api from '../api.js'
 import { displayName } from '../utils.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend)
+
+const { t } = useI18n()
 
 const period = ref('month')
 const spending = ref([])

@@ -6,7 +6,7 @@
           ref="inputEl"
           v-model="query"
           type="text"
-          placeholder="Add an item..."
+          :placeholder="$t('shoppingList.addItem')"
           @input="handleInput"
           @keydown.enter.prevent="handleAdd"
           @keydown.escape="dropdownOpen = false"
@@ -30,9 +30,9 @@
           </div>
         </div>
       </div>
-      <input v-model.number="quantity" type="number" min="0.1" step="any" placeholder="Qty" class="qty-input" />
-      <input v-model="unit" type="text" placeholder="Unit" class="unit-input" />
-      <button class="btn-primary" @click="handleAdd" :disabled="!query.trim() || adding">{{ adding ? 'Adding...' : 'Add' }}</button>
+      <input v-model.number="quantity" type="number" min="0.1" step="any" :placeholder="$t('shoppingList.qty')" class="qty-input" />
+      <input v-model="unit" type="text" :placeholder="$t('shoppingList.unit')" class="unit-input" />
+      <button class="btn-primary" @click="handleAdd" :disabled="!query.trim() || adding">{{ adding ? $t('shoppingList.adding') : $t('common.add') }}</button>
     </div>
   </div>
 </template>
