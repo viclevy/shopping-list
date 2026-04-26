@@ -219,6 +219,7 @@
     "alphaAsc": "א' לת'",
     "alphaDesc": "ת' לא'",
     "manual": "ידני",
-    "frequency": "נרכש הכי הרבה"
+    "frequency": "נרכש הכי הרבה",
+    "dragToReorder": "גרור לסידור מחדש"
   }
 }

@@ -219,6 +219,7 @@
     "alphaAsc": "A bis Z",
     "alphaDesc": "Z bis A",
     "manual": "Manuell",
-    "frequency": "Am häufigsten"
+    "frequency": "Am häufigsten",
+    "dragToReorder": "Ziehen zum Sortieren"
   }
 }

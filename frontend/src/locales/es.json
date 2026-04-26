@@ -219,6 +219,7 @@
     "alphaAsc": "A a Z",
     "alphaDesc": "Z a A",
     "manual": "Manual",
-    "frequency": "Más comprado"
+    "frequency": "Más comprado",
+    "dragToReorder": "Arrastrar para reordenar"
   }
 }

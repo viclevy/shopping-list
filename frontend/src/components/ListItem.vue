@@ -1,5 +1,8 @@
 <template>
-  <div class="list-item card">
+  <div class="list-item card" :class="{ 'is-draggable': showMoveButtons }">
+    <div v-if="showMoveButtons" class="drag-handle" title="Drag to reorder">
+      <span class="drag-icon">&#9776;</span>
+    </div>
     <div class="item-left" @click="$router.push(`/product/${item.product.id}`)">
       <img
         v-if="thumbSrc"
@@ -23,10 +26,6 @@
       </div>
     </div>
     <div class="item-actions">
-      <template v-if="showMoveButtons">
-        <button class="btn-move" :disabled="isFirst" @click="$emit('move-up', item)" title="Move up">▲</button>
-        <button class="btn-move" :disabled="isLast" @click="$emit('move-down', item)" title="Move down">▼</button>
-      </template>
       <button class="btn-check" title="Check off" @click="$emit('check-off', item)">&#10003;</button>
       <button class="btn-remove" title="Remove" @click="$emit('remove', item)">&#10005;</button>
     </div>
@@ -41,11 +40,9 @@ import { displayName } from '../utils.js'
 const props = defineProps({
   item: { type: Object, required: true },
   showMoveButtons: { type: Boolean, default: false },
-  isFirst: { type: Boolean, default: false },
-  isLast: { type: Boolean, default: false },
 })
 
-defineEmits(['check-off', 'remove', 'move-up', 'move-down'])
+defineEmits(['check-off', 'remove'])
 
 const list = useShoppingListStore()
 const updating = ref(false)
@@ -267,26 +264,33 @@ async function decrement() {
   background: #ffcdd2;
 }
 
-.btn-move {
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  font-size: 11px;
+.drag-handle {
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  width: 28px;
+  flex-shrink: 0;
+  cursor: grab;
+  color: var(--text-secondary);
+  opacity: 0.45;
+  touch-action: none;
 }
 
-.btn-move:disabled {
-  opacity: 0.25;
-  cursor: default;
+.drag-handle:hover {
+  opacity: 0.85;
 }
 
-.btn-move:not(:disabled):hover {
-  background: var(--border);
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-icon {
+  font-size: 16px;
+  line-height: 1;
+  user-select: none;
+}
+
+.is-draggable {
+  padding-left: 4px;
 }
 </style>

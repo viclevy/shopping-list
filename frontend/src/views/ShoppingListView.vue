@@ -10,43 +10,67 @@
     <div v-else class="list">
       <!-- Grouped by category -->
       <template v-if="prefs.listGrouping === 'category'">
-        <div v-for="group in groupedItems" :key="group.category" class="category-group">
-          <div class="category-header-row">
-            <div class="category-header">{{ group.category }}</div>
-            <div v-if="prefs.categorySort === 'manual'" class="cat-move-btns">
-              <button class="btn-move" :disabled="isFirstCategory(group.category)" @click="moveCategoryUp(group.category)" title="Move category up">▲</button>
-              <button class="btn-move" :disabled="isLastCategory(group.category)" @click="moveCategoryDown(group.category)" title="Move category down">▼</button>
+        <!-- Category groups themselves are draggable when categorySort === 'manual' -->
+        <draggable
+          v-model="draggableGroups"
+          item-key="category"
+          handle=".cat-drag-handle"
+          :disabled="prefs.categorySort !== 'manual'"
+          ghost-class="drag-ghost"
+          @end="onCategoryDragEnd"
+        >
+          <template #item="{ element: group, index: groupIndex }">
+            <div class="category-group">
+              <div class="category-header-row">
+                <div
+                  v-if="prefs.categorySort === 'manual'"
+                  class="cat-drag-handle"
+                  :title="$t('listPreferences.dragToReorder')"
+                >&#9776;</div>
+                <div class="category-header">{{ group.category }}</div>
+              </div>
+              <!-- Items within the group are draggable when listItemSort === 'manual' -->
+              <draggable
+                v-model="draggableGroups[groupIndex].items"
+                item-key="id"
+                handle=".drag-handle"
+                :disabled="prefs.listItemSort !== 'manual'"
+                ghost-class="drag-ghost"
+                @end="() => onItemDragEnd(groupIndex)"
+              >
+                <template #item="{ element: item }">
+                  <ListItem
+                    :item="item"
+                    :show-move-buttons="prefs.listItemSort === 'manual'"
+                    @check-off="openCheckOff(item)"
+                    @remove="handleRemove(item)"
+                  />
+                </template>
+              </draggable>
             </div>
-          </div>
-          <ListItem
-            v-for="(item, idx) in group.items"
-            :key="item.id"
-            :item="item"
-            :show-move-buttons="prefs.listItemSort === 'manual'"
-            :is-first="idx === 0"
-            :is-last="idx === group.items.length - 1"
-            @check-off="openCheckOff(item)"
-            @remove="handleRemove(item)"
-            @move-up="moveItemUp(item, group.items)"
-            @move-down="moveItemDown(item, group.items)"
-          />
-        </div>
+          </template>
+        </draggable>
       </template>
 
       <!-- Flat (no groups) -->
       <template v-else>
-        <ListItem
-          v-for="(item, idx) in flatItems"
-          :key="item.id"
-          :item="item"
-          :show-move-buttons="prefs.listItemSort === 'manual'"
-          :is-first="idx === 0"
-          :is-last="idx === flatItems.length - 1"
-          @check-off="openCheckOff(item)"
-          @remove="handleRemove(item)"
-          @move-up="moveItemUp(item, flatItems)"
-          @move-down="moveItemDown(item, flatItems)"
-        />
+        <draggable
+          v-model="draggableFlat"
+          item-key="id"
+          handle=".drag-handle"
+          :disabled="prefs.listItemSort !== 'manual'"
+          ghost-class="drag-ghost"
+          @end="onFlatDragEnd"
+        >
+          <template #item="{ element: item }">
+            <ListItem
+              :item="item"
+              :show-move-buttons="prefs.listItemSort === 'manual'"
+              @check-off="openCheckOff(item)"
+              @remove="handleRemove(item)"
+            />
+          </template>
+        </draggable>
       </template>
     </div>
     <BoughtBeforeSection />
@@ -68,6 +92,7 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import draggable from 'vuedraggable'
 import api from '../api.js'
 import { useShoppingListStore } from '../stores/shoppingList.js'
 import { usePreferencesStore } from '../stores/preferences.js'
@@ -92,7 +117,6 @@ function sortItems(items) {
   } else if (prefs.listItemSort === 'alpha-desc') {
     arr.sort((a, b) => b.product.name.localeCompare(a.product.name))
   } else {
-    // manual — sort by sort_order (nulls last), fallback to added_at
     arr.sort((a, b) => {
       if (a.sort_order == null && b.sort_order == null) return new Date(a.added_at) - new Date(b.added_at)
       if (a.sort_order == null) return 1
@@ -104,9 +128,6 @@ function sortItems(items) {
 }
 
 function categoryFrequency(category) {
-  // Count total purchase_count from boughtBefore for items in this category
-  // We approximate by counting items in the current list belonging to this category
-  // against the boughtBefore analytics
   const bbMap = {}
   for (const bb of list.boughtBefore) {
     bbMap[bb.product_id] = bb.purchase_count || 0
@@ -141,7 +162,6 @@ function sortedCategoryNames(categories) {
       return categoryFrequency(b) - categoryFrequency(a)
     })
   } else {
-    // manual — use stored categoryOrder, unknown categories go last
     const order = prefs.categoryOrder || []
     arr.sort((a, b) => {
       if (a === 'Uncategorized') return 1
@@ -172,55 +192,32 @@ const groupedItems = computed(() => {
 
 const flatItems = computed(() => sortItems(list.items))
 
-// ─── Category manual sort ─────────────────────────────────────────────────────
+// vuedraggable needs a writable array — we keep local copies that mirror
+// the computed values and only update when the source data changes.
+const draggableGroups = ref([])
+const draggableFlat = ref([])
 
-function isFirstCategory(cat) {
-  return groupedItems.value[0]?.category === cat
-}
+watch(groupedItems, (val) => { draggableGroups.value = val.map(g => ({ ...g, items: [...g.items] })) }, { immediate: true, deep: true })
+watch(flatItems, (val) => { draggableFlat.value = [...val] }, { immediate: true, deep: true })
 
-function isLastCategory(cat) {
-  return groupedItems.value[groupedItems.value.length - 1]?.category === cat
-}
+// ─── Drag handlers ────────────────────────────────────────────────────────────
 
-function moveCategoryUp(cat) {
-  const order = groupedItems.value.map(g => g.category)
-  const idx = order.indexOf(cat)
-  if (idx <= 0) return
-  ;[order[idx - 1], order[idx]] = [order[idx], order[idx - 1]]
+function onCategoryDragEnd() {
+  const order = draggableGroups.value.map(g => g.category)
   prefs.categoryOrder = order
-  prefs.savePreferences({ category_order: order })
+  prefs.savePreferences({ category_sort: 'manual', category_order: order })
 }
 
-function moveCategoryDown(cat) {
-  const order = groupedItems.value.map(g => g.category)
-  const idx = order.indexOf(cat)
-  if (idx < 0 || idx >= order.length - 1) return
-  ;[order[idx], order[idx + 1]] = [order[idx + 1], order[idx]]
-  prefs.categoryOrder = order
-  prefs.savePreferences({ category_order: order })
+function onItemDragEnd(groupIndex) {
+  applyItemOrder(draggableGroups.value[groupIndex].items)
 }
 
-// ─── Item manual sort ─────────────────────────────────────────────────────────
-
-async function moveItemUp(item, items) {
-  const idx = items.findIndex(i => i.id === item.id)
-  if (idx <= 0) return
-  const reordered = [...items]
-  ;[reordered[idx - 1], reordered[idx]] = [reordered[idx], reordered[idx - 1]]
-  await applyItemOrder(reordered)
-}
-
-async function moveItemDown(item, items) {
-  const idx = items.findIndex(i => i.id === item.id)
-  if (idx < 0 || idx >= items.length - 1) return
-  const reordered = [...items]
-  ;[reordered[idx], reordered[idx + 1]] = [reordered[idx + 1], reordered[idx]]
-  await applyItemOrder(reordered)
+function onFlatDragEnd() {
+  applyItemOrder(draggableFlat.value)
 }
 
 async function applyItemOrder(orderedItems) {
   const payload = orderedItems.map((item, idx) => ({ id: item.id, sort_order: idx }))
-  // optimistic update
   for (const entry of payload) {
     const item = list.items.find(i => i.id === entry.id)
     if (item) item.sort_order = entry.sort_order
@@ -304,7 +301,6 @@ function handleSetupSaved() {
 .category-header-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding-right: 8px;
 }
 
@@ -315,30 +311,34 @@ function handleSetupSaved() {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 10px 12px 4px;
+  flex: 1;
 }
 
-.cat-move-btns {
+.cat-drag-handle {
   display: flex;
-  gap: 2px;
-}
-
-.btn-move {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 1px 5px;
-  cursor: pointer;
-  font-size: 11px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  padding: 10px 4px 4px;
+  cursor: grab;
   color: var(--text-secondary);
-  line-height: 1;
+  opacity: 0.4;
+  font-size: 15px;
+  touch-action: none;
+  user-select: none;
 }
 
-.btn-move:disabled {
-  opacity: 0.3;
-  cursor: default;
+.cat-drag-handle:hover {
+  opacity: 0.8;
 }
 
-.btn-move:not(:disabled):hover {
-  background: var(--border);
+.cat-drag-handle:active {
+  cursor: grabbing;
+}
+
+.drag-ghost {
+  opacity: 0.4;
+  background: var(--primary-light, #e3f0ff);
+  border-radius: 8px;
 }
 </style>

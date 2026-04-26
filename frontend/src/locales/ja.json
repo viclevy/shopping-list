@@ -219,6 +219,7 @@
     "alphaAsc": "A→Z",
     "alphaDesc": "Z→A",
     "manual": "手動",
-    "frequency": "購入頻度順"
+    "frequency": "購入頻度順",
+    "dragToReorder": "ドラッグして並び替え"
   }
 }
