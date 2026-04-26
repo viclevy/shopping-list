@@ -220,6 +220,7 @@
     "alphaDesc": "Z→A",
     "manual": "手動",
     "frequency": "購入頻度順",
-    "dragToReorder": "ドラッグして並び替え"
+    "dragToReorder": "ドラッグして並び替え",
+    "sortAndGroup": "並び替えとグループ"
   }
 }

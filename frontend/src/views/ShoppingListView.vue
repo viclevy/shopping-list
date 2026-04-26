@@ -1,7 +1,6 @@
 <template>
   <div class="shopping-list-view">
     <AddItemBar @new-product="openSetupDialog" />
-    <ListSortControls />
     <div v-if="list.loading && !list.items.length" class="loading">{{ $t('common.loading') }}</div>
     <div v-else-if="!list.items.length" class="empty">
       <p>{{ $t('shoppingList.empty') }}</p>
@@ -98,7 +97,6 @@ import { useShoppingListStore } from '../stores/shoppingList.js'
 import { usePreferencesStore } from '../stores/preferences.js'
 import AddItemBar from '../components/AddItemBar.vue'
 import ListItem from '../components/ListItem.vue'
-import ListSortControls from '../components/ListSortControls.vue'
 import BoughtBeforeSection from '../components/BoughtBeforeSection.vue'
 import CheckOffDialog from '../components/CheckOffDialog.vue'
 import NewItemSetupDialog from '../components/NewItemSetupDialog.vue'

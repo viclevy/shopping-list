@@ -220,6 +220,7 @@
     "alphaDesc": "Z to A",
     "manual": "Manual",
     "frequency": "Most Purchased",
-    "dragToReorder": "Drag to reorder"
+    "dragToReorder": "Drag to reorder",
+    "sortAndGroup": "Sort & Group"
   }
 }

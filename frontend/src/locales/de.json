@@ -220,6 +220,7 @@
     "alphaDesc": "Z bis A",
     "manual": "Manuell",
     "frequency": "Am häufigsten",
-    "dragToReorder": "Ziehen zum Sortieren"
+    "dragToReorder": "Ziehen zum Sortieren",
+    "sortAndGroup": "Sortieren & Gruppieren"
   }
 }

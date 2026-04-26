@@ -16,6 +16,14 @@
 
     <!-- Desktop right controls -->
     <div class="header-right desktop-only">
+      <button v-if="isListRoute" class="sort-btn" :title="$t('listPreferences.sortAndGroup')" @click="sortSheetOpen = true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+          <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+          <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+        </svg>
+      </button>
       <LanguageSwitcher />
       <VoiceButton />
       <div class="user-menu">
@@ -24,9 +32,17 @@
       </div>
     </div>
 
-    <!-- Mobile: voice + hamburger -->
+    <!-- Mobile: voice + sort + hamburger -->
     <div class="mobile-controls mobile-only">
       <VoiceButton />
+      <button v-if="isListRoute" class="sort-btn" :title="$t('listPreferences.sortAndGroup')" @click="sortSheetOpen = true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/>
+          <line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/>
+          <line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>
+        </svg>
+      </button>
       <button class="hamburger-btn" :aria-label="$t('nav.menu')" @click="menuOpen = !menuOpen">
         <span class="hamburger-bar"></span>
         <span class="hamburger-bar"></span>
@@ -60,19 +76,25 @@
 
   <!-- Backdrop to close menu when clicking outside -->
   <div v-if="menuOpen" class="menu-backdrop" @click="menuOpen = false"></div>
+
+  <SortSheet v-model="sortSheetOpen" />
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { displayName } from '../utils.js'
 import VoiceButton from './VoiceButton.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
+import SortSheet from './SortSheet.vue'
 
 const auth = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const menuOpen = ref(false)
+const sortSheetOpen = ref(false)
+const isListRoute = computed(() => route.path === '/')
 
 function handleLogout() {
   menuOpen.value = false
@@ -156,6 +178,25 @@ function handleLogout() {
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  color: white;
+  flex-shrink: 0;
+}
+
+.sort-btn:hover {
+  background: rgba(255,255,255,0.2);
 }
 
 .hamburger-btn {
