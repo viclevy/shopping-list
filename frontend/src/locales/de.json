@@ -21,7 +21,8 @@
     "analytics": "Analytik",
     "stores": "Geschäfte",
     "items": "Artikel",
-    "users": "Benutzer"
+    "users": "Benutzer",
+    "menu": "Menü"
   },
   "login": {
     "title": "Einkaufsliste",
@@ -207,5 +208,17 @@
     "deleteFailed": "Fehler beim Löschen",
     "saveFailed": "Fehler beim Speichern",
     "addFailed": "Fehler beim Hinzufügen"
+  },
+  "listPreferences": {
+    "grouping": "Ansicht",
+    "byCategory": "Nach Kategorie",
+    "flat": "Flach",
+    "itemOrder": "Artikel",
+    "categoryOrder": "Kategorien",
+    "buyAgainOrder": "Nochmals kaufen",
+    "alphaAsc": "A bis Z",
+    "alphaDesc": "Z bis A",
+    "manual": "Manuell",
+    "frequency": "Am häufigsten"
   }
 }

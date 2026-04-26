@@ -21,7 +21,8 @@
     "analytics": "ניתוח",
     "stores": "חנויות",
     "items": "פריטים",
-    "users": "משתמשים"
+    "users": "משתמשים",
+    "menu": "תפריט"
   },
   "login": {
     "title": "רשימת קניות",
@@ -207,5 +208,17 @@
     "deleteFailed": "מחיקה נכשלה",
     "saveFailed": "שמירה נכשלה",
     "addFailed": "הוספה נכשלה"
+  },
+  "listPreferences": {
+    "grouping": "תצוגה",
+    "byCategory": "לפי קטגוריה",
+    "flat": "שטוחה",
+    "itemOrder": "פריטים",
+    "categoryOrder": "קטגוריות",
+    "buyAgainOrder": "קנה שוב",
+    "alphaAsc": "א' לת'",
+    "alphaDesc": "ת' לא'",
+    "manual": "ידני",
+    "frequency": "נרכש הכי הרבה"
   }
 }

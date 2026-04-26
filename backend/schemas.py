@@ -179,8 +179,62 @@ class ShoppingListItemRead(BaseModel):
     added_at: datetime
     last_price: Optional[float] = None
     last_store_id: Optional[int] = None
+    sort_order: Optional[int] = None
 
     model_config = {"from_attributes": True}
+
+
+# --- User Preferences ---
+VALID_LIST_GROUPING = {"category", "flat"}
+VALID_LIST_ITEM_SORT = {"alpha-asc", "alpha-desc", "manual"}
+VALID_CATEGORY_SORT = {"alpha-asc", "alpha-desc", "manual", "frequency"}
+VALID_BUYAGAIN_SORT = {"frequency", "alpha-asc", "alpha-desc"}
+
+
+class UserPreferenceRead(BaseModel):
+    list_grouping: str = "category"
+    list_item_sort: str = "alpha-asc"
+    category_sort: str = "alpha-asc"
+    category_order: Optional[List[str]] = None
+    buyagain_sort: str = "frequency"
+
+    model_config = {"from_attributes": True}
+
+
+class UserPreferenceUpdate(BaseModel):
+    list_grouping: Optional[str] = None
+    list_item_sort: Optional[str] = None
+    category_sort: Optional[str] = None
+    category_order: Optional[List[str]] = None
+    buyagain_sort: Optional[str] = None
+
+    @field_validator("list_grouping")
+    @classmethod
+    def validate_list_grouping(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_LIST_GROUPING:
+            raise ValueError(f"list_grouping must be one of {VALID_LIST_GROUPING}")
+        return v
+
+    @field_validator("list_item_sort")
+    @classmethod
+    def validate_list_item_sort(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_LIST_ITEM_SORT:
+            raise ValueError(f"list_item_sort must be one of {VALID_LIST_ITEM_SORT}")
+        return v
+
+    @field_validator("category_sort")
+    @classmethod
+    def validate_category_sort(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_CATEGORY_SORT:
+            raise ValueError(f"category_sort must be one of {VALID_CATEGORY_SORT}")
+        return v
+
+    @field_validator("buyagain_sort")
+    @classmethod
+    def validate_buyagain_sort(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in VALID_BUYAGAIN_SORT:
+            raise ValueError(f"buyagain_sort must be one of {VALID_BUYAGAIN_SORT}")
+        return v
 
 
 class CheckOffRequest(BaseModel):

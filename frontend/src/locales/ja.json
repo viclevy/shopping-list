@@ -21,7 +21,8 @@
     "analytics": "分析",
     "stores": "店舗",
     "items": "アイテム",
-    "users": "ユーザー"
+    "users": "ユーザー",
+    "menu": "メニュー"
   },
   "login": {
     "title": "買い物リスト",
@@ -207,5 +208,17 @@
     "deleteFailed": "削除に失敗しました",
     "saveFailed": "保存に失敗しました",
     "addFailed": "追加に失敗しました"
+  },
+  "listPreferences": {
+    "grouping": "表示",
+    "byCategory": "カテゴリ別",
+    "flat": "フラット",
+    "itemOrder": "アイテム",
+    "categoryOrder": "カテゴリ",
+    "buyAgainOrder": "再購入",
+    "alphaAsc": "A→Z",
+    "alphaDesc": "Z→A",
+    "manual": "手動",
+    "frequency": "購入頻度順"
   }
 }

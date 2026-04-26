@@ -23,6 +23,10 @@
       </div>
     </div>
     <div class="item-actions">
+      <template v-if="showMoveButtons">
+        <button class="btn-move" :disabled="isFirst" @click="$emit('move-up', item)" title="Move up">▲</button>
+        <button class="btn-move" :disabled="isLast" @click="$emit('move-down', item)" title="Move down">▼</button>
+      </template>
       <button class="btn-check" title="Check off" @click="$emit('check-off', item)">&#10003;</button>
       <button class="btn-remove" title="Remove" @click="$emit('remove', item)">&#10005;</button>
     </div>
@@ -36,9 +40,12 @@ import { displayName } from '../utils.js'
 
 const props = defineProps({
   item: { type: Object, required: true },
+  showMoveButtons: { type: Boolean, default: false },
+  isFirst: { type: Boolean, default: false },
+  isLast: { type: Boolean, default: false },
 })
 
-defineEmits(['check-off', 'remove'])
+defineEmits(['check-off', 'remove', 'move-up', 'move-down'])
 
 const list = useShoppingListStore()
 const updating = ref(false)
@@ -258,5 +265,28 @@ async function decrement() {
 
 .btn-remove:hover {
   background: #ffcdd2;
+}
+
+.btn-move {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-move:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.btn-move:not(:disabled):hover {
+  background: var(--border);
 }
 </style>

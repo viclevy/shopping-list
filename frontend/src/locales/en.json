@@ -21,7 +21,8 @@
     "analytics": "Analytics",
     "stores": "Stores",
     "items": "Items",
-    "users": "Users"
+    "users": "Users",
+    "menu": "Menu"
   },
   "login": {
     "title": "Shopping List",
@@ -207,5 +208,17 @@
     "deleteFailed": "Failed to delete",
     "saveFailed": "Failed to save",
     "addFailed": "Failed to add"
+  },
+  "listPreferences": {
+    "grouping": "View",
+    "byCategory": "By Category",
+    "flat": "Flat",
+    "itemOrder": "Items",
+    "categoryOrder": "Categories",
+    "buyAgainOrder": "Buy Again",
+    "alphaAsc": "A to Z",
+    "alphaDesc": "Z to A",
+    "manual": "Manual",
+    "frequency": "Most Purchased"
   }
 }

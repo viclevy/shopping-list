@@ -6,7 +6,7 @@
     </div>
     <div v-if="expanded" class="bought-list">
       <div
-        v-for="item in list.boughtBefore"
+        v-for="item in sortedBoughtBefore"
         :key="item.product_id"
         class="bought-item card"
       >
@@ -32,14 +32,29 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useShoppingListStore } from '../stores/shoppingList.js'
+import { usePreferencesStore } from '../stores/preferences.js'
 
 const { t } = useI18n()
 const list = useShoppingListStore()
+const prefs = usePreferencesStore()
 const expanded = ref(true)
 const adding = ref(null)
+
+const sortedBoughtBefore = computed(() => {
+  const arr = [...list.boughtBefore]
+  if (prefs.buyagainSort === 'alpha-asc') {
+    arr.sort((a, b) => a.product_name.localeCompare(b.product_name))
+  } else if (prefs.buyagainSort === 'alpha-desc') {
+    arr.sort((a, b) => b.product_name.localeCompare(a.product_name))
+  } else {
+    // frequency (default) — already sorted by server, but re-sort to be safe
+    arr.sort((a, b) => (b.purchase_count || 0) - (a.purchase_count || 0))
+  }
+  return arr
+})
 
 function thumbSrc(item) {
   if (item.photo_filename) return `/uploads/${item.photo_filename}`

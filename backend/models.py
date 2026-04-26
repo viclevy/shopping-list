@@ -99,8 +99,23 @@ class ShoppingListItem(Base):
     unit = Column(String, nullable=True)
     added_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     added_at = Column(DateTime, default=datetime.utcnow)
+    sort_order = Column(Integer, nullable=True)
 
     product = relationship("Product")
+    user = relationship("User")
+
+
+class UserPreference(Base):
+    __tablename__ = "user_preferences"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    list_grouping = Column(String, default="category")   # "category" | "flat"
+    list_item_sort = Column(String, default="alpha-asc")  # "alpha-asc" | "alpha-desc" | "manual"
+    category_sort = Column(String, default="alpha-asc")   # "alpha-asc" | "alpha-desc" | "manual" | "frequency"
+    category_order = Column(String, nullable=True)         # JSON list of category names for manual sort
+    buyagain_sort = Column(String, default="frequency")    # "frequency" | "alpha-asc" | "alpha-desc"
+
     user = relationship("User")
 
 

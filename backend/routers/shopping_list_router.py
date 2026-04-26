@@ -3,6 +3,7 @@ from typing import List
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
@@ -61,6 +62,7 @@ def _item_to_read(item: ShoppingListItem, last_price_map: dict = None) -> Shoppi
         added_at=item.added_at,
         last_price=lp[0] if lp else None,
         last_store_id=lp[1] if lp else None,
+        sort_order=item.sort_order,
     )
 
 
@@ -332,3 +334,22 @@ async def remove_item(
     db.commit()
     await _broadcast_list(db)
     return {"status": "ok"}
+
+
+class _ReorderItem(BaseModel):
+    id: int
+    sort_order: int
+
+
+@router.put("/reorder", status_code=204)
+async def reorder_items(
+    items: List[_ReorderItem],
+    db: Session = Depends(get_db),
+    _user: User = Depends(get_current_user),
+):
+    for entry in items:
+        db.query(ShoppingListItem).filter(ShoppingListItem.id == entry.id).update(
+            {"sort_order": entry.sort_order}, synchronize_session=False
+        )
+    db.commit()
+    await _broadcast_list(db)
