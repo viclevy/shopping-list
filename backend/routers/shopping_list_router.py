@@ -302,7 +302,7 @@ async def check_off_item(
         user_id=user.id,
         store_id=body.store_id,
         price=body.price,
-        quantity=item.quantity,
+        quantity=body.quantity if body.quantity is not None else item.quantity,
         unit=item.unit,
     ))
 

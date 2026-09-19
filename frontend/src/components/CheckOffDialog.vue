@@ -14,17 +14,29 @@
           >{{ store.name }}</button>
         </div>
       </div>
-      <div class="field">
-        <label>{{ $t('productDetail.price') }}</label>
-        <input
-          ref="priceInput"
-          :value="priceDisplay"
-          type="text"
-          inputmode="numeric"
-          placeholder="0.00"
-          @input="onPriceInput"
-          @keydown="onPriceKeydown"
-        />
+      <div class="field-row">
+        <div class="field">
+          <label>{{ $t('productDetail.price') }}</label>
+          <input
+            ref="priceInput"
+            :value="priceDisplay"
+            type="text"
+            inputmode="numeric"
+            placeholder="0.00"
+            @input="onPriceInput"
+            @keydown="onPriceKeydown"
+          />
+        </div>
+        <div class="field field-qty">
+          <label>{{ $t('shoppingList.qty') }}</label>
+          <input
+            v-model.number="quantity"
+            type="number"
+            min="0.1"
+            step="any"
+            @blur="clampQuantity"
+          />
+        </div>
       </div>
       <div class="dialog-actions">
         <button class="btn-secondary" @click="$emit('close')">{{ $t('common.cancel') }}</button>
@@ -53,6 +65,12 @@ const session = useSessionStore()
 const stores = ref([])
 const storeId = ref(null)
 const priceInput = ref(null)
+const quantity = ref(1)
+
+// Fractional quantities are valid (e.g. 1.5 lb); only fall back for values the backend rejects
+function clampQuantity() {
+  if (!Number.isFinite(quantity.value) || quantity.value <= 0) quantity.value = 1
+}
 
 // Implied-decimal: store raw digits as a string (e.g. "123" means $1.23)
 const priceDigits = ref('')
@@ -102,6 +120,7 @@ onMounted(async () => {
 watch(() => props.visible, (val) => {
   if (val && props.item) {
     storeId.value = session.selectedStoreId || props.item.last_store_id || null
+    quantity.value = props.item.quantity
     fillPrice()
   }
 })
@@ -142,9 +161,11 @@ function confirm() {
   if (storeId.value) {
     session.selectedStoreId = storeId.value
   }
+  clampQuantity()
   emit('confirm', {
     store_id: storeId.value,
     price: priceValue.value,
+    quantity: quantity.value,
   })
 }
 </script>
@@ -179,6 +200,20 @@ function confirm() {
   font-size: 13px;
   color: var(--text-secondary);
   margin-bottom: 4px;
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.field-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-qty {
+  flex: 0 0 80px;
 }
 
 .dialog-actions {

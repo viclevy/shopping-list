@@ -1,3 +1,4 @@
+import math
 import re
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -240,6 +241,14 @@ class UserPreferenceUpdate(BaseModel):
 class CheckOffRequest(BaseModel):
     store_id: Optional[int] = None
     price: Optional[float] = None
+    quantity: Optional[float] = None
+
+    @field_validator("quantity")
+    @classmethod
+    def validate_quantity(cls, v: Optional[float]) -> Optional[float]:
+        if v is not None and not (math.isfinite(v) and v > 0):
+            raise ValueError("quantity must be a positive number")
+        return v
 
 
 # --- History ---
