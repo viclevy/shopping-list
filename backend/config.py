@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     serpapi_key: str = ""
     data_dir: str = "./data"
     jwt_secret: str = ""
-    jwt_expiry_hours: int = 720  # 30 days
+    jwt_expiry_hours: int = 2160  # 90 days (~3 months)
 
 
 settings = Settings()

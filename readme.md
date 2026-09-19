@@ -53,7 +53,7 @@ docker run -d --name shopping-list -p 8080:8080 \
 | `DATA_DIR` | `./data` | Data directory inside the container |
 | `BRAVE_SEARCH_API_KEY` | | Brave Search API key (for image search and auto-categorization) |
 | `JWT_SECRET` | auto-generated | Secret for signing JWT tokens |
-| `JWT_EXPIRY_HOURS` | `720` | JWT token lifetime (default 30 days) |
+| `JWT_EXPIRY_HOURS` | `2160` | JWT token lifetime (default 90 days) |
 | `TLS_ENABLED` | `false` | Enable HTTPS |
 | `TLS_CERT_FILE` | | Path to TLS certificate |
 | `TLS_KEY_FILE` | | Path to TLS private key |
