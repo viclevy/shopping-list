@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from auth import get_current_user
 from database import get_db
 from models import HistoryEvent, Product, ProductPhoto, ProductStore, ShoppingListItem, Store, StoreAlias, User
-from photo_utils import delete_photo, save_photo, save_photo_from_url
+from photo_utils import ImageFetchError, delete_photo, save_photo, save_photo_from_url
 from schemas import ProductCreate, ProductRead, ProductStoreRead, ProductUpdate, StorePriceByName
 
 router = APIRouter()
@@ -208,6 +208,8 @@ def add_photo_from_url(
 
     try:
         filename = save_photo_from_url(url)
+    except ImageFetchError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception:
         raise HTTPException(status_code=400, detail="Failed to download image")
 
