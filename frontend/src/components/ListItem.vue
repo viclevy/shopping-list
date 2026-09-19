@@ -50,7 +50,7 @@ const updating = ref(false)
 const thumbSrc = computed(() => {
   const photos = props.item.product.photos || []
   const primary = photos.find(p => p.is_primary) || photos[0]
-  if (primary) return `/uploads/${primary.filename}`
+  if (primary) return `uploads/${primary.filename}`
   if (props.item.product.image_url) return props.item.product.image_url
   return null
 })

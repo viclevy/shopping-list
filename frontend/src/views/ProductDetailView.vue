@@ -29,7 +29,7 @@
         <h3>{{ $t('productDetail.photos') }}</h3>
         <div v-if="product.photos?.length" class="photo-gallery">
           <div v-for="photo in product.photos" :key="photo.id" class="photo-wrap">
-            <img :src="`/uploads/${photo.filename}`" class="photo-img" />
+            <img :src="`uploads/${photo.filename}`" class="photo-img" />
             <button
               class="photo-primary"
               :class="{ active: photo.is_primary }"

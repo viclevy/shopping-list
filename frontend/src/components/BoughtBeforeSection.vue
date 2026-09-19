@@ -57,7 +57,7 @@ const sortedBoughtBefore = computed(() => {
 })
 
 function thumbSrc(item) {
-  if (item.photo_filename) return `/uploads/${item.photo_filename}`
+  if (item.photo_filename) return `uploads/${item.photo_filename}`
   if (item.image_url) return item.image_url
   return null
 }

@@ -73,7 +73,7 @@ function onSearch() {
 function thumbSrc(product) {
   const photos = product.photos || []
   const primary = photos.find(p => p.is_primary) || photos[0]
-  if (primary) return `/uploads/${primary.filename}`
+  if (primary) return `uploads/${primary.filename}`
   if (product.image_url) return product.image_url
   return null
 }

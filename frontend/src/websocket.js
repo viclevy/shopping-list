@@ -12,8 +12,10 @@ export function connectWebSocket() {
   if (!auth.token) return
   if (ws && ws.readyState === WebSocket.OPEN) return
 
-  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-  ws = new WebSocket(`${protocol}//${location.host}/ws?token=${auth.token}`)
+  const base = new URL(document.baseURI)
+  const protocol = base.protocol === 'https:' ? 'wss:' : 'ws:'
+  const path = base.pathname.endsWith('/') ? `${base.pathname}ws` : `${base.pathname}/ws`
+  ws = new WebSocket(`${protocol}//${base.host}${path}?token=${auth.token}`)
 
   ws.onopen = () => {
     reconnectDelay = 3000
