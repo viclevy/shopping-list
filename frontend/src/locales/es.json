@@ -201,7 +201,10 @@
   },
   "photoPickerTab": {
     "camera": "Cámara",
-    "upload": "Subir"
+    "upload": "Subir",
+    "url": "URL",
+    "urlPlaceholder": "https://example.com/foto.jpg",
+    "urlFailed": "No se pudo cargar una imagen desde esa URL. Usa un enlace directo a un archivo de imagen (.jpg, .png, .webp)."
   },
   "errors": {
     "loadFailed": "Error al cargar",

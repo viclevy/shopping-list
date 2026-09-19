@@ -201,7 +201,10 @@
   },
   "photoPickerTab": {
     "camera": "Kamera",
-    "upload": "Hochladen"
+    "upload": "Hochladen",
+    "url": "URL",
+    "urlPlaceholder": "https://example.com/foto.jpg",
+    "urlFailed": "Von dieser URL konnte kein Bild geladen werden. Verwende einen direkten Link zu einer Bilddatei (.jpg, .png, .webp)."
   },
   "errors": {
     "loadFailed": "Fehler beim Laden",

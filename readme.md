@@ -8,7 +8,7 @@ A real-time shared shopping list for families. Runs as a single Docker container
 - **Voice input** — add, remove, or check off items using voice commands (Web Speech API)
 - **Smart item setup** — new items are auto-categorized via web search; a setup dialog lets you pick a category and product image immediately after adding
 - **Product catalog** — items are saved as reusable products with photos, categories, and per-store prices
-- **Photo support** — search for product images, snap a photo with your camera, or upload a file
+- **Photo support** — search for product images, snap a photo with your camera, upload a file, or paste an image URL
 - **Store & price tracking** — track prices per store; confirm or correct at checkout
 - **Analytics dashboard** — spending by week/month/year, by store, by category, most frequent items, and family member contributions
 - **Multi-user** — individual accounts with activity tracking; admin manages users

@@ -201,7 +201,10 @@
   },
   "photoPickerTab": {
     "camera": "מצלמה",
-    "upload": "העלה"
+    "upload": "העלה",
+    "url": "קישור",
+    "urlPlaceholder": "https://example.com/photo.jpg",
+    "urlFailed": "לא ניתן היה לטעון תמונה מהכתובת הזו. השתמשו בקישור ישיר לקובץ תמונה (.jpg, .png, .webp)."
   },
   "errors": {
     "loadFailed": "טעינה נכשלה",

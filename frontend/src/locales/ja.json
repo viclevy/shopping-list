@@ -201,7 +201,10 @@
   },
   "photoPickerTab": {
     "camera": "カメラ",
-    "upload": "アップロード"
+    "upload": "アップロード",
+    "url": "URL",
+    "urlPlaceholder": "https://example.com/photo.jpg",
+    "urlFailed": "そのURLから画像を読み込めませんでした。画像ファイル（.jpg、.png、.webp）への直接リンクを使用してください。"
   },
   "errors": {
     "loadFailed": "読み込みに失敗しました",
