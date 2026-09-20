@@ -17,6 +17,7 @@ from routers import (
     auth_router,
     history_router,
     products_router,
+    receipts_router,
     search_router,
     shopping_list_router,
     stores_router,
@@ -52,6 +53,7 @@ app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users_router.router, prefix="/api/users", tags=["users"])
 app.include_router(stores_router.router, prefix="/api/stores", tags=["stores"])
 app.include_router(products_router.router, prefix="/api/products", tags=["products"])
+app.include_router(receipts_router.router, prefix="/api/receipts", tags=["receipts"])
 app.include_router(shopping_list_router.router, prefix="/api/list", tags=["shopping-list"])
 app.include_router(history_router.router, prefix="/api/history", tags=["history"])
 app.include_router(analytics_router.router, prefix="/api/analytics", tags=["analytics"])
@@ -113,6 +115,9 @@ def startup():
         list_item_cols = [row[1] for row in conn.execute("PRAGMA table_info(shopping_list_items)").fetchall()]
         if "sort_order" not in list_item_cols:
             conn.execute("ALTER TABLE shopping_list_items ADD COLUMN sort_order INTEGER")
+        event_cols = [row[1] for row in conn.execute("PRAGMA table_info(history_events)").fetchall()]
+        if "receipt_id" not in event_cols:
+            conn.execute("ALTER TABLE history_events ADD COLUMN receipt_id INTEGER REFERENCES receipts(id) ON DELETE SET NULL")
         conn.commit()
         conn.close()
 

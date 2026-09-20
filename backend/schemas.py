@@ -3,7 +3,7 @@ import re
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 def _normalize_text(v: str) -> str:
@@ -312,3 +312,117 @@ class BoughtBeforeItem(BaseModel):
     purchase_count: int
     last_purchased: Optional[datetime] = None
     score: float
+
+
+# --- Receipts ---
+class ReceiptLineRead(BaseModel):
+    id: int
+    position: int
+    raw_text: str
+    item_code: Optional[str] = None
+    section: Optional[str] = None
+    line_type: str  # product, discount, fee
+    quantity: float = 1
+    unit_price: Optional[float] = None
+    line_total: Optional[float] = None
+    net_amount: Optional[float] = None  # paid for the line after its discounts (not set on discounts)
+    taxable: bool = False
+    applies_to: Optional[int] = None
+    suggested_name: Optional[str] = None
+    suggested_category: Optional[str] = None
+    product_id: Optional[int] = None
+    product_name: Optional[str] = None
+    match_source: Optional[str] = None  # learned, suggested
+    ignored: bool = False
+
+
+class ReceiptCheck(BaseModel):
+    lines_sum: float
+    expected_total: float  # lines plus tax
+    balanced: bool
+
+
+class ReceiptRead(BaseModel):
+    id: int
+    status: str  # pending, failed, confirmed
+    error: Optional[str] = None
+    store_id: Optional[int] = None
+    store_name: Optional[str] = None
+    store_text: Optional[str] = None
+    purchased_local: Optional[str] = None
+    purchased_at: Optional[datetime] = None
+    subtotal: Optional[float] = None
+    tax: Optional[float] = None
+    total: Optional[float] = None
+    check: Optional[ReceiptCheck] = None
+    uploaded_by: str
+    created_at: datetime
+    confirmed_at: Optional[datetime] = None
+    image_ids: List[int] = []
+    lines: List[ReceiptLineRead] = []
+
+
+class ReceiptSummary(BaseModel):
+    id: int
+    status: str
+    store_name: Optional[str] = None
+    store_text: Optional[str] = None
+    purchased_local: Optional[str] = None
+    purchased_at: Optional[datetime] = None
+    total: Optional[float] = None
+    line_count: int
+    uploaded_by: str
+    created_at: datetime
+
+
+class ReceiptStoreUpdate(BaseModel):
+    store_id: Optional[int] = None
+
+
+class ReceiptConfirmLine(BaseModel):
+    id: int
+    ignore: bool = False
+    product_id: Optional[int] = None
+    new_product_name: Optional[str] = None
+    category: Optional[str] = None  # only used when creating the product
+    quantity: float = 1
+    amount: float = 0  # paid for the whole line, after discounts
+
+    @field_validator("new_product_name", "category")
+    @classmethod
+    def normalize_text(cls, v: Optional[str]) -> Optional[str]:
+        return (_normalize_text(v) or None) if v else None
+
+    @field_validator("quantity")
+    @classmethod
+    def validate_quantity(cls, v: float) -> float:
+        if not (math.isfinite(v) and v > 0):
+            raise ValueError("quantity must be a positive number")
+        return v
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount(cls, v: float) -> float:
+        if not (math.isfinite(v) and v >= 0):
+            raise ValueError("amount must be zero or more")
+        return v
+
+    @model_validator(mode="after")
+    def need_a_product(self):
+        if not self.ignore and bool(self.product_id) == bool(self.new_product_name):
+            raise ValueError("choose an existing product or give a new product name")
+        return self
+
+
+class ReceiptConfirm(BaseModel):
+    store_id: int
+    purchased_at: datetime  # when the purchase happened; naive values are taken as UTC
+    lines: List[ReceiptConfirmLine]
+
+
+class ReceiptConfirmResult(BaseModel):
+    receipt: ReceiptRead
+    recorded: int  # purchases added to the history
+    updated: int  # earlier check-offs corrected from the receipt instead of counted twice
+    new_products: int
+    removed_from_list: int

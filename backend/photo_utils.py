@@ -8,12 +8,17 @@ import time
 import uuid
 from urllib.parse import quote, urljoin, urlsplit
 
-from PIL import Image
+from PIL import Image, ImageOps
 
 from config import settings
 
 MAX_SIZE_BYTES = 2 * 1024 * 1024  # 2 MB
 UPLOAD_DIR = os.path.join(settings.data_dir, "uploads")
+
+# Receipts hold card digits and names, so they live outside the publicly served uploads folder
+RECEIPT_DIR = os.path.join(settings.data_dir, "receipts")
+RECEIPT_MAX_DIM = 3072  # receipts are tall and narrow, so keep more pixels than product photos
+RECEIPT_MAX_BYTES = 4 * 1024 * 1024
 
 MAX_DOWNLOAD_BYTES = 20 * 1024 * 1024  # largest source image accepted from a URL
 MAX_REDIRECTS = 5
@@ -59,6 +64,44 @@ def save_photo(file_bytes: bytes, original_name: str) -> str:
 
 def delete_photo(filename: str):
     filepath = os.path.join(UPLOAD_DIR, filename)
+    if os.path.exists(filepath):
+        os.remove(filepath)
+
+
+def save_receipt_image(file_bytes: bytes) -> str:
+    """Save an uploaded receipt photo and return its filename.
+
+    Raises ValueError if the bytes are not a usable image.
+    """
+    try:
+        img = Image.open(io.BytesIO(file_bytes))
+        img = ImageOps.exif_transpose(img).convert("RGB")  # phones store rotation in EXIF
+    except (OSError, ValueError, SyntaxError, Image.DecompressionBombError):
+        raise ValueError("That file is not a usable image")
+    if img.width > RECEIPT_MAX_DIM or img.height > RECEIPT_MAX_DIM:
+        img.thumbnail((RECEIPT_MAX_DIM, RECEIPT_MAX_DIM))
+
+    quality = 88
+    while True:
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG", quality=quality)
+        if buffer.tell() <= RECEIPT_MAX_BYTES or quality <= 50:
+            break
+        quality -= 10
+
+    os.makedirs(RECEIPT_DIR, exist_ok=True)
+    filename = "%s.jpg" % uuid.uuid4().hex
+    with open(os.path.join(RECEIPT_DIR, filename), "wb") as f:
+        f.write(buffer.getvalue())
+    return filename
+
+
+def receipt_image_path(filename: str) -> str:
+    return os.path.join(RECEIPT_DIR, filename)
+
+
+def delete_receipt_image(filename: str):
+    filepath = receipt_image_path(filename)
     if os.path.exists(filepath):
         os.remove(filepath)
 

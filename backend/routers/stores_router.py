@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from auth import get_current_user
 from database import get_db
-from models import HistoryEvent, Product, ProductStore, Store, StoreAlias, User
+from models import HistoryEvent, Product, ProductStore, Receipt, ReceiptItemMap, Store, StoreAlias, User
 from schemas import StoreAliasRead, StoreCreate, StoreRead
 
 
@@ -176,6 +176,19 @@ def merge_stores(
     db.query(Product).filter(Product.favorite_store_id == other_store_id).update(
         {"favorite_store_id": store_id}, synchronize_session="fetch"
     )
+
+    # Move receipts, and the receipt line matches they taught us (skip ones the keeper already has)
+    db.query(Receipt).filter(Receipt.store_id == other_store_id).update(
+        {"store_id": store_id}, synchronize_session="fetch"
+    )
+    for entry in db.query(ReceiptItemMap).filter(ReceiptItemMap.store_id == other_store_id).all():
+        already = db.query(ReceiptItemMap).filter(
+            ReceiptItemMap.store_id == store_id, ReceiptItemMap.match_key == entry.match_key
+        ).first()
+        if already:
+            db.delete(entry)
+        else:
+            entry.store_id = store_id
 
     # Add the other store's name as alias (if not already an alias or the keeper's name)
     if other.name.lower() != keeper.name.lower():
