@@ -44,7 +44,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../api.js'
-import { displayName } from '../utils.js'
+import { displayName, serverDate } from '../utils.js'
 
 const { t } = useI18n()
 
@@ -90,7 +90,7 @@ function formatAction(action) {
 }
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return serverDate(iso)?.toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   })
 }

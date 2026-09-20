@@ -11,7 +11,8 @@ export function normalizeCategory(value) {
 // Server timestamps are UTC but carry no "Z", which the browser would read as local time
 export function serverDate(iso) {
   if (!iso) return null
-  return new Date(/[zZ]$|[+-]\d\d:?\d\d$/.test(iso) ? iso : iso + 'Z')
+  const trimmed = iso.replace(/(\.\d{3})\d+/, '$1') // some browsers reject microseconds
+  return new Date(/[zZ]$|[+-]\d\d:?\d\d$/.test(trimmed) ? trimmed : trimmed + 'Z')
 }
 
 export function formatDateTime(date, locale) {

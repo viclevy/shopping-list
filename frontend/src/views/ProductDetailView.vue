@@ -114,7 +114,7 @@ import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../api.js'
-import { normalizeCategory, displayName } from '../utils.js'
+import { normalizeCategory, displayName, serverDate } from '../utils.js'
 import PhotoPicker from '../components/PhotoPicker.vue'
 import ImageSearchPicker from '../components/ImageSearchPicker.vue'
 
@@ -236,7 +236,7 @@ async function onImageSaved() {
 }
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return serverDate(iso)?.toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
     hour: 'numeric', minute: '2-digit',
   })
