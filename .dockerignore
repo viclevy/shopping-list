@@ -8,3 +8,6 @@ __pycache__
 .env
 *.md
 .claude/
+backend/tests
+tests
+.pytest_cache
