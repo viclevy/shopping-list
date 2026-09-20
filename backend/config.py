@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     tls_cert_file: str = ""
     tls_key_file: str = ""
     gemini_api_key: str = ""
+    gemini_model: str = "gemini-flash-latest"  # pinned names (e.g. gemini-2.5-flash) get retired for new projects
     serpapi_key: str = ""
     data_dir: str = "./data"
     jwt_secret: str = ""

@@ -7,6 +7,7 @@ Runs both sources in parallel and merges results.
 
 import asyncio
 import json
+import logging
 import re
 from typing import Optional
 
@@ -15,6 +16,8 @@ from google import genai
 from google.genai import types
 
 from config import settings
+
+logger = logging.getLogger(__name__)
 
 _CATEGORIES = [
     "Produce", "Dairy", "Meat", "Seafood", "Bakery", "Frozen",
@@ -49,7 +52,7 @@ Example: {{"category": "Dairy", "price": 4.29, "stores": ["Walmart", "Kroger", "
 
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=settings.gemini_model,
             contents=prompt,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_search=types.GoogleSearch())],
@@ -78,7 +81,8 @@ Example: {{"category": "Dairy", "price": 4.29, "stores": ["Walmart", "Kroger", "
         stores = [s for s in stores if isinstance(s, str) and s.strip()][:5]
 
         return {"category": category, "price": price, "stores": stores}
-    except Exception:
+    except Exception as e:
+        logger.warning("Gemini lookup for %r failed: %s: %s", product_name, type(e).__name__, e)
         return {"category": None, "price": None, "stores": []}
 
 
