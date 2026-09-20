@@ -10,6 +10,7 @@ A real-time shared shopping list for families. Runs as a single Docker container
 - **Product catalog** — items are saved as reusable products with photos, categories, and per-store prices
 - **Photo support** — search for product images, snap a photo with your camera, upload a file, or paste an image URL
 - **Store & price tracking** — track prices per store; confirm or correct at checkout
+- **Receipt import** — photograph a paper receipt and review the items, prices and store the AI reads from it; confirmed receipts go into your history and analytics (needs `GEMINI_API_KEY`)
 - **Analytics dashboard** — spending by week/month/year, by store, by category, most frequent items, and family member contributions
 - **Multi-user** — individual accounts with activity tracking; admin manages users
 - **PWA** — installable on mobile for quick home-screen access

@@ -20,6 +20,18 @@ const routes = [
     meta: { auth: true },
   },
   {
+    path: '/receipts',
+    name: 'receipts',
+    component: () => import('./views/ReceiptsView.vue'),
+    meta: { auth: true },
+  },
+  {
+    path: '/receipts/:id',
+    name: 'receipt',
+    component: () => import('./views/ReceiptReviewView.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/history',
     name: 'history',
     component: () => import('./views/HistoryView.vue'),

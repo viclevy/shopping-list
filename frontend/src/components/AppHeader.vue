@@ -7,6 +7,7 @@
     <!-- Desktop nav -->
     <nav class="header-nav desktop-only">
       <router-link to="/">{{ $t('nav.list') }}</router-link>
+      <router-link to="/receipts">{{ $t('nav.receipts') }}</router-link>
       <router-link to="/history">{{ $t('nav.history') }}</router-link>
       <router-link to="/analytics">{{ $t('nav.analytics') }}</router-link>
       <router-link to="/stores">{{ $t('nav.stores') }}</router-link>
@@ -56,6 +57,7 @@
         <div class="mobile-menu-inner">
           <nav class="mobile-nav">
             <router-link to="/" @click="menuOpen = false">{{ $t('nav.list') }}</router-link>
+            <router-link to="/receipts" @click="menuOpen = false">{{ $t('nav.receipts') }}</router-link>
             <router-link to="/history" @click="menuOpen = false">{{ $t('nav.history') }}</router-link>
             <router-link to="/analytics" @click="menuOpen = false">{{ $t('nav.analytics') }}</router-link>
             <router-link to="/stores" @click="menuOpen = false">{{ $t('nav.stores') }}</router-link>
