@@ -23,7 +23,9 @@
       </div>
       <p v-if="busy" class="hint">{{ $t('receipts.readingHint') }}</p>
       <p v-if="uploadError" class="error">{{ uploadError }}</p>
-      <input ref="cameraInput" type="file" accept="image/*" capture="environment" hidden @change="onPick" />
+      <!-- Android 14/15 Chrome drops the camera option for a plain accept="image/*" input;
+           this non-standard MIME keeps it and is harmless on other browsers -->
+      <input ref="cameraInput" type="file" accept="image/*,android/allowCamera" capture="environment" hidden @change="onPick" />
       <input ref="galleryInput" type="file" accept="image/*" multiple hidden @change="onPick" />
     </div>
 

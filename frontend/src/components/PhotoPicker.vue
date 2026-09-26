@@ -7,7 +7,9 @@
     </div>
 
     <div v-if="tab === 'camera'" class="picker-content">
-      <input type="file" accept="image/*" capture="environment" @change="handleFile" />
+      <!-- Android 14/15 Chrome drops the camera option for a plain accept="image/*" input;
+           this non-standard MIME keeps it and is harmless on other browsers -->
+      <input type="file" accept="image/*,android/allowCamera" capture="environment" @change="handleFile" />
     </div>
 
     <div v-if="tab === 'upload'" class="picker-content">

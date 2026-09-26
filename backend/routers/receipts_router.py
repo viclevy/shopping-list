@@ -29,6 +29,7 @@ from photo_utils import delete_receipt_image, receipt_image_path, save_receipt_i
 from receipt_utils import (
     TOTAL_TOLERANCE,
     category_from_section,
+    category_from_similar_product,
     check_totals,
     clean_local_time,
     finite,
@@ -84,6 +85,7 @@ def _receipt_to_read(db: Session, receipt: Receipt) -> ReceiptRead:
     product_ids = {l.product_id for l in receipt.lines if l.product_id}
     names = dict(db.query(Product.id, Product.name).filter(Product.id.in_(product_ids)).all()) if product_ids else {}
     categories = [c for (c,) in db.query(Product.category).filter(Product.category.isnot(None)).distinct().all()]
+    named_products = db.query(Product.name, Product.category).filter(Product.category.isnot(None)).all()
     lines = [
         ReceiptLineRead(
             id=l.id,
@@ -99,7 +101,10 @@ def _receipt_to_read(db: Session, receipt: Receipt) -> ReceiptRead:
             taxable=bool(l.taxable),
             applies_to=l.applies_to,
             suggested_name=l.suggested_name,
-            suggested_category=category_from_section(l.section, categories),
+            suggested_category=category_from_section(l.section, categories) or (
+                category_from_similar_product(l.suggested_name or l.raw_text, named_products)
+                if l.line_type == "product" else None
+            ),
             product_id=l.product_id,
             product_name=names.get(l.product_id),
             match_source=l.match_source,

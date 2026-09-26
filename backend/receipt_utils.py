@@ -105,6 +105,26 @@ def category_from_section(section: Optional[str], known_categories: Iterable[str
     return None
 
 
+_NAME_WORD = re.compile(r"[a-z]{4,}")
+
+
+def category_from_similar_product(name: Optional[str], named_products: Iterable[Tuple[str, str]]) -> Optional[str]:
+    """Guess a category for a new item from an already-categorized product with a similar name.
+
+    named_products is (name, category). Matched on shared whole words of 4+ letters (so "Cottage
+    Cheese" can borrow "Dairy" from an existing "Cheddar Cheese") to avoid noise from short words.
+    """
+    words = set(_NAME_WORD.findall((name or "").lower()))
+    if not words:
+        return None
+    best_category, best_score = None, 0
+    for product_name, category in named_products:
+        score = len(words & set(_NAME_WORD.findall(product_name.lower())))
+        if score > best_score:
+            best_category, best_score = category, score
+    return best_category
+
+
 def clean_local_time(text: Optional[str]) -> Optional[str]:
     """Normalize a printed date/time to ISO 'YYYY-MM-DDTHH:MM' (local, no timezone), or None."""
     try:

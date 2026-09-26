@@ -98,6 +98,20 @@ def test_a_department_heading_becomes_a_category_we_already_use(section, expecte
     assert ru.category_from_section(section, ["Dairy", "Produce"]) == expected
 
 
+NAMED_PRODUCTS = [("Cheddar Cheese", "Dairy"), ("Sliced Strawberries", "Produce")]
+
+
+@pytest.mark.parametrize("name, expected", [
+    ("Cottage Cheese", "Dairy"),  # shares "cheese" with an existing Dairy product
+    ("Large Strawberries", "Produce"),  # shares "strawberries" with an existing Produce product
+    ("Paper Towels", None),  # no shared word with anything we already categorized
+    ("", None),
+    (None, None),
+])
+def test_a_new_item_can_borrow_a_category_from_a_similarly_named_product(name, expected):
+    assert ru.category_from_similar_product(name, NAMED_PRODUCTS) == expected
+
+
 @pytest.mark.parametrize("value, expected", [(1.5, 1.5), (0, 0), (float("nan"), None), (float("inf"), None), ("3", None), (True, None), (None, None)])
 def test_finite(value, expected):
     assert ru.finite(value) == expected

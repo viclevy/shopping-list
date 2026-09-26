@@ -112,13 +112,20 @@
 
               <div v-else class="new-product">
                 <input v-model="row.newName" type="text" :placeholder="$t('receipts.newProductName')" @input="touch(row)" />
-                <input
-                  v-model="row.category"
-                  type="text"
-                  list="receipt-categories"
-                  :placeholder="$t('receipts.category')"
-                  @input="touch(row)"
-                />
+                <div class="category-field">
+                  <input
+                    v-model="row.category"
+                    type="text"
+                    autocomplete="off"
+                    :placeholder="$t('receipts.category')"
+                    @input="touch(row)"
+                    @focus="row.categoryOpen = true"
+                    @blur="row.categoryOpen = false"
+                  />
+                  <ul v-if="row.categoryOpen && categoryMatches(row).length" class="suggestions">
+                    <li v-for="c in categoryMatches(row)" :key="c" @mousedown.prevent="chooseCategory(row, c)">{{ c }}</li>
+                  </ul>
+                </div>
                 <button class="link" @click="startPick(row)">{{ $t('receipts.chooseExisting') }}</button>
               </div>
             </div>
@@ -137,10 +144,6 @@
             <p v-if="row.discounted" class="hint">{{ $t('receipts.afterDiscounts', { was: formatMoney(row.wasTotal) }) }}</p>
           </template>
         </div>
-
-        <datalist id="receipt-categories">
-          <option v-for="c in categories" :key="c" :value="c" />
-        </datalist>
 
         <div class="confirm-bar">
           <p v-if="!canConfirm" class="hint">{{ $t('receipts.needsChoices') }}</p>
@@ -249,6 +252,7 @@ function buildRows(r, previous = []) {
         productName: l.product_name,
         newName: l.suggested_name || '',
         category: l.suggested_category || '',
+        categoryOpen: false,
         query: '',
         quantity: l.quantity,
         amountText: Number(net).toFixed(2),
@@ -345,6 +349,18 @@ function matches(row) {
   const query = row.query.trim().toLowerCase()
   if (!query) return []
   return products.value.filter(p => p.name.toLowerCase().includes(query)).slice(0, 6)
+}
+
+function categoryMatches(row) {
+  const query = row.category.trim().toLowerCase()
+  const list = query ? categories.value.filter(c => c.toLowerCase().includes(query)) : categories.value
+  return list.slice(0, 8)
+}
+
+function chooseCategory(row, category) {
+  row.category = category
+  row.categoryOpen = false
+  row.dirty = true
 }
 
 function touch(row) { row.dirty = true }
@@ -564,7 +580,9 @@ h3 { margin-bottom: 8px; }
 .suggestions li small { color: var(--text-secondary); margin-inline-start: 6px; }
 .suggestions li.create { color: var(--primary-dark); font-weight: 600; border-top: 1px solid var(--border); }
 
-.new-product { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.new-product { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; width: 100%; }
+
+.category-field { position: relative; width: 100%; }
 
 .numbers {
   display: flex;

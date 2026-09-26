@@ -39,6 +39,15 @@ def test_a_receipt_photo_becomes_a_draft_to_review(shop):
     assert lines[3]["suggested_category"] is None  # CONVENIENCE ITEMS is not a category we use
 
 
+def test_a_new_item_can_borrow_a_category_from_a_similarly_named_product(shop):
+    shop.product("Farm Fresh Eggs", "Dairy")  # BJ's prints no department headings to match by section
+
+    lines = shop.upload(bjs()).json()["lines"]
+
+    eggs = next(l for l in lines if l["suggested_name"] == "Eggs")
+    assert eggs["suggested_category"] == "Dairy"
+
+
 def test_totals_that_do_not_add_up_are_flagged(shop):
     reading = stop_shop()
     reading.total = 25.00
