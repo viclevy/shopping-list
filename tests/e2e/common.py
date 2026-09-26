@@ -85,6 +85,11 @@ class Api:
         assert response.ok, (path, response.status, response.text())
         return response.json()
 
+    def get(self, path):
+        response = self.context.get(path, headers=self.headers)
+        assert response.ok, (path, response.status, response.text())
+        return response.json()
+
     def next_reading(self, fixture):
         """Choose what the next receipt reading returns (see serve_with_stub.py)."""
         return self.post("/__stub/next", {"fixture": fixture})

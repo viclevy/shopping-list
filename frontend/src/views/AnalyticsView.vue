@@ -62,7 +62,7 @@ import {
   Title, Tooltip, Legend,
 } from 'chart.js'
 import api from '../api.js'
-import { displayName } from '../utils.js'
+import { displayName, serverDate } from '../utils.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend)
 
@@ -134,7 +134,7 @@ watch(period, loadData)
 onMounted(loadData)
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return serverDate(iso)?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 </script>
 

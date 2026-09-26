@@ -39,6 +39,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../api.js'
+import { serverDate } from '../utils.js'
 
 const { t } = useI18n()
 
@@ -104,7 +105,7 @@ async function deleteProduct(product) {
 }
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return serverDate(iso)?.toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 }

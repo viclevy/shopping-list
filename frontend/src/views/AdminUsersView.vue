@@ -37,7 +37,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../api.js'
-import { displayName } from '../utils.js'
+import { displayName, serverDate } from '../utils.js'
 
 const { t } = useI18n()
 
@@ -89,7 +89,7 @@ async function resetPassword(user) {
 onMounted(loadUsers)
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return serverDate(iso)?.toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 }

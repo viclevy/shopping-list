@@ -81,6 +81,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import api from '../api.js'
+import { serverDate } from '../utils.js'
 
 const { t } = useI18n()
 
@@ -210,7 +211,7 @@ async function doMerge(otherStore) {
 onMounted(loadStores)
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString('en-US', {
+  return serverDate(iso)?.toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   })
 }
