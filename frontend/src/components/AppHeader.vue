@@ -31,6 +31,7 @@
         <span class="username">{{ displayName(auth.user?.username) }}</span>
         <button class="btn-secondary btn-sm" @click="handleLogout">{{ $t('common.logout') }}</button>
       </div>
+      <span class="app-version">v{{ appVersion }}</span>
     </div>
 
     <!-- Mobile: voice + sort + hamburger -->
@@ -71,6 +72,7 @@
               <button class="btn-secondary btn-sm" @click="handleLogout">{{ $t('common.logout') }}</button>
             </div>
           </div>
+          <span class="app-version">v{{ appVersion }}</span>
         </div>
       </div>
     </transition>
@@ -90,6 +92,7 @@ import { displayName } from '../utils.js'
 import VoiceButton from './VoiceButton.vue'
 import LanguageSwitcher from './LanguageSwitcher.vue'
 import SortSheet from './SortSheet.vue'
+import { version as appVersion } from '../../package.json'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -166,6 +169,12 @@ function handleLogout() {
 .username {
   font-size: 13px;
   opacity: 0.9;
+}
+
+.app-version {
+  font-size: 11px;
+  opacity: 0.65;
+  white-space: nowrap;
 }
 
 .btn-sm {
@@ -265,6 +274,12 @@ function handleLogout() {
   justify-content: space-between;
   padding: 12px 20px 0;
   gap: 12px;
+}
+
+.mobile-menu-inner .app-version {
+  display: block;
+  text-align: center;
+  padding: 10px 0 0;
 }
 
 .menu-backdrop {
